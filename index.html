@@ -232,9 +232,7 @@ const KEY='a320-g2g-v2', CKEY='a320-g2g-sheet-v1';
 const SHEET_ID='1kLzc6NIsg7AnONMmdIqGgN665pXlB0xC7n5DcCrcDJM';
 const SHEET_EDIT='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit';
 const SHEET_CSV=[
-  'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/pub?gid=2093333298&single=true&output=csv',
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTzomvfaq6CjmRlc8CHTXOeLlavorb3Y9e-b03pfV48jF8ar8h_AJ0pMM60J5WLdbc45t4W6TCBzBWW/pub?gid=2093333298&single=true&output=csv',
-  'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/pub?output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTzomvfaq6CjmRIc8CHTXOeLlavorb3Y9e-b03pfV48jF8ar8h_AJ0pMM60J5WLdbc45t4W6TCBzBWW/pub?gid=2093333298&single=true&output=csv',
   'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&gid=2093333298'];
 const pad=n=>String(n).padStart(2,'0');
 BASE.forEach((P,p)=>P.s.forEach((x,i)=>{x.k='S'+pad(p)+'-'+pad(i); if(!x.t&&/^(VIDEO|NEW|FIXED)$/.test(x.n||'')){x.t=x.n;x.n='';}}));
