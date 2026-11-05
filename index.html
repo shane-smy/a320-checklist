@@ -1099,7 +1099,7 @@ const M={
  'S04-07':{ok:s=>s.arr.done,keys:s=>s.page==='F-PLN'?['L6']:s.page==='LATREV'?['R1']:s.page==='ARR'?(s.arr.appr&&s.arr.star?['R6']:s.arr.stage==='appr'?['L2']:['L2']):['F-PLN'],hint:'F-PLN, then L6 (destination EGPH) → ARRIVAL>. Choose ILS24, then INPI1E, then INSERT* (R6).'},
  'S04-08':{ok:s=>!s.f.legs.some(l=>l.t==='disc'||l.dup),keys:s=>{if(s.page!=='F-PLN')return['F-PLN'];const legs=s.f.legs.filter(l=>l.t!=='dest');const i=legs.findIndex(l=>l.t==='disc'||l.dup);if(i<0)return[];if(i<s.f.top)return['DOWN'];if(i>s.f.top+4)return['UP'];return s.sp==='CLR'?['L'+(i-s.f.top+1)]:['CLR'];},hint:'Scroll the F-PLN with the arrow keys (↑ moves the list up to show later waypoints). For each DISCONTINUITY (and the second UTAVA): press CLR so the scratchpad says CLR, then the left key next to the line.'},
  'S04-10':{ok:s=>okVal(s.perf.v1,OFP.v1)&&okVal(s.perf.vr,OFP.vr)&&okVal(s.perf.v2,OFP.v2),keys:s=>s.page!=='PERF'?['PERF']:!okVal(s.perf.v1,OFP.v1)?['L1']:!okVal(s.perf.vr,OFP.vr)?['L2']:['L3'],hint:`PERF page. Type 138 and press L1 (V1), 141 → L2 (VR), 143 → L3 (V2).`},
- 'S04-11':{ok:s=>s.perf.flaps===OFP.flaps,keys:s=>s.page!=='PERF'?['PERF']:['R3'],hint:'Type 1/UP0.7 and press R3 (FLAPS/THS).'},
+ 'S04-11':{ok:s=>s.perf.flaps===OFP.flaps,keys:s=>s.page!=='PERF'?['PERF']:['R3'],hint:'Type 1 / U P 0 . 7 on the keypad (the bottom line should read 1/UP0.7), then press R3 next to FLAPS/THS.'},
  'S04-12':{ok:s=>okVal(s.perf.flex,OFP.flex),keys:s=>s.page!=='PERF'?['PERF']:['R4'],hint:'Type 58 and press R4 (FLEX TO TEMP).'},
  'S04-13':{ok:s=>s.perf.toConfirmed,keys:s=>s.page!=='PERF'?['PERF']:['R6'],hint:'Press CONFIRM TO DATA* (R6, bottom right).'},
  'S04-14':{ok:s=>s.page==='PERF'&&s.perf.ph==='TO',keys:s=>['PERF'],hint:'Look at TRANS ALT on the PERF TAKE OFF page (L4) – it should say 6000.'},
@@ -1116,7 +1116,10 @@ const cur=()=>D&&D.steps[D.i];const mp=st=>st&&M[st.k];
 function adv(initial){while(D.i<D.steps.length){const m=mp(cur());if(m&&m.ok(S)){if(!initial)S.fb={c:'ok',t:'✓ '+cur().i+(S.fb&&S.fb.c==='ok'&&!S.fb.t.startsWith('✓')?' – '+S.fb.t:'')};D.i++;continue;}break;}
   if(D.i>=D.steps.length&&!S.tEnd){S.tEnd=Date.now();const t=(S.tEnd-(S.t0||S.tEnd))/1000,k=D.d+'-'+mode,b=best[k];if(!b||S.mistakes<b.m||(S.mistakes===b.m&&t<b.t)){best[k]={t,m:S.mistakes};saveBest();D.newBest=true;}}}
 function msg(t,mistake){S.sp=t;S.spMsg=true;if(mistake){S.mistakes++;S.fb={c:'bad',t:t==='FORMAT ERROR'?'FORMAT ERROR – check what you typed and the format the field expects.':t==='NOT ALLOWED'?'NOT ALLOWED – that key does nothing there.':t};}}
-function wrong(field,should){S.mistakes++;S.fb={c:'bad',t:`${field} doesn't match your paperwork – it should be ${should}. Type it again over the top.`};}
+function wrong(field,should,got){S.mistakes++;S.fb={c:'bad',t:`${field}: you entered ${got||'a different value'}, your paperwork says ${should}. Type ${String(should).split(' ')[0]} on the keypad, then press the same key again.`};}
+const EX={V1:'138',VR:'141',V2:'143',FLAPS:'1/UP0.7',FLEX:'58',QNH:'998',TEMP:'8',WIND:'210/05',RADIO:'50'};
+function empty(field){S.fb={c:'info',t:`Type the ${field} value first – it appears on the bottom line of the screen – then press this key. Example: ${EX[field]||''}`};}
+function fmt(field){S.sp='FORMAT ERROR';S.spMsg=true;S.mistakes++;S.fb={c:'bad',t:`FORMAT ERROR – the ${field} field expects something like ${EX[field]}. Press CLR to clear, then type it again.`};}
 function wrongSel(field,should){S.mistakes++;S.fb={c:'bad',t:`Wrong ${field} – your paperwork says ${should}. Press L1 on this page to choose again.`};}
 // ---------- key handling
 function key(k){if(!S||S.tEnd)return;if(!S.t0)S.t0=Date.now();S.fb=null;
@@ -1170,17 +1173,17 @@ function lsk(k){const s=S,p=s.page,sp=s.sp&&!s.spMsg?s.sp.trim():'',side=k[0],n=
     if(k==='R6'){if(P.ph==='TO'&&P.upPending){P.upPending=false;P.toConfirmed=true;s.fb={c:'ok',t:'Takeoff data confirmed.'};return;}const order=['TO','CLB','CRZ','DES','APPR'];const i=order.indexOf(P.ph);if(i<order.length-1&&!(P.ph==='TO'&&S.drill==='pre'&&false))P.ph=order[i+1];return;}
     if(k==='L6'&&P.ph!=='TO'){const order=['TO','CLB','CRZ','DES','APPR'];const i=order.indexOf(P.ph);if(i>(S.drill==='appr'?2:0))P.ph=order[i-1];return;}
     if(P.ph==='TO'){const sp3=v=>/^\d{3}$/.test(v)&&+v>=90&&+v<=180;
-      if(['L1','L2','L3'].includes(k)){if(!sp){msg('NOT ALLOWED',true);return;}if(!sp3(sp)){msg(/^\d+$/.test(sp)?'ENTRY OUT OF RANGE':'FORMAT ERROR',true);return;}take();const f={L1:'v1',L2:'vr',L3:'v2'}[k];P[f]=sp;if(!okVal(sp,OFP[f]))wrong(f.toUpperCase(),OFP[f]);return;}
-      if(k==='R3'){if(!sp){msg('NOT ALLOWED',true);return;}const m=sp.match(/^([0-3])\/(UP|DN)(\d{1,2}(\.\d)?)$/);if(!m){msg('FORMAT ERROR',true);return;}take();P.flaps=`${m[1]}/${m[2]}${(+m[3]).toFixed(1)}`;if(P.flaps!==OFP.flaps)wrong('FLAPS/THS',OFP.flaps);return;}
-      if(k==='R4'){if(!sp){msg('NOT ALLOWED',true);return;}if(!/^\d{1,2}$/.test(sp)){msg('FORMAT ERROR',true);return;}take();P.flex=sp;if(!okVal(sp,OFP.flex))wrong('FLEX TO TEMP',OFP.flex);return;}
+      if(['L1','L2','L3'].includes(k)){const f={L1:'v1',L2:'vr',L3:'v2'}[k];if(!sp){empty(f.toUpperCase());return;}if(!sp3(sp)){fmt(f.toUpperCase());return;}take();P[f]=sp;if(!okVal(sp,OFP[f]))wrong(f.toUpperCase(),OFP[f],sp);return;}
+      if(k==='R3'){if(!sp){empty('FLAPS');return;}let m=sp.match(/^([0-3])\/(UP|DN)(\d?\.?\d)$/),f,d,v;if(m){f=m[1];d=m[2];v=m[3];}else{m=sp.match(/^([0-3])\/(\d?\.?\d)(UP|DN)$/);if(m){f=m[1];v=m[2];d=m[3];}}if(!m){fmt('FLAPS');return;}take();if(!v.includes('.')&&v.length===2)v=v[0]+'.'+v[1];P.flaps=`${f}/${d}${(+v).toFixed(1)}`;if(P.flaps!==OFP.flaps)wrong('FLAPS/THS',OFP.flaps,P.flaps);return;}
+      if(k==='R4'){if(!sp){empty('FLEX');return;}if(!/^\d{1,2}$/.test(sp)){fmt('FLEX');return;}take();P.flex=sp;if(!okVal(sp,OFP.flex))wrong('FLEX TO TEMP',OFP.flex,sp);return;}
       if(k==='L4'||k==='L5'){if(sp){msg('NOT IN TRAINER');}return;}
       if(sp)msg('NOT ALLOWED',true);return;}
     if(P.ph==='APPR'){
-      if(k==='L1'){if(!/^\d{3,4}$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.qnh=sp;if(!okVal(sp,OFP.qnh))wrong('QNH',OFP.qnh+' (the Q number in the METAR)');return;}
-      if(k==='L2'){if(!/^-?\d{1,2}$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.temp=String(+sp);if(!okVal(P.temp,OFP.temp))wrong('TEMP',OFP.temp);return;}
-      if(k==='L3'){const m=sp.match(/^(\d{1,3})\/(\d{1,3})$/);if(!m){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.wind=m[1].padStart(3,'0')+'/'+m[2].padStart(2,'0');if(P.wind!=='210/05')wrong('MAG WIND','210/05');return;}
-      if(k==='R2'){if(!/^\d{2,4}$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.baro=sp;P.radio='';S.mistakes++;S.fb={c:'bad',t:'This is a CAT III approach – use RADIO 50, not BARO. Your BARO entry wiped the RADIO value.'};return;}
-      if(k==='R3'){if(!/^(\d{1,4}|NO)$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.radio=sp;P.baro='';if(!okVal(sp,OFP.radio))wrong('RADIO',OFP.radio);return;}
+      if(k==='L1'){if(!sp){empty('QNH');return;}if(!/^\d{3,4}$/.test(sp)){fmt('QNH');return;}take();P.qnh=sp;if(!okVal(sp,OFP.qnh))wrong('QNH',OFP.qnh+' (the Q number in the METAR)',sp);return;}
+      if(k==='L2'){if(!sp){empty('TEMP');return;}if(!/^-?\d{1,2}$/.test(sp)){fmt('TEMP');return;}take();P.temp=String(+sp);if(!okVal(P.temp,OFP.temp))wrong('TEMP',OFP.temp,P.temp);return;}
+      if(k==='L3'){if(!sp){empty('WIND');return;}const m=sp.match(/^(\d{1,3})\/(\d{1,3})$/);if(!m){fmt('WIND');return;}take();P.wind=m[1].padStart(3,'0')+'/'+m[2].padStart(2,'0');if(P.wind!=='210/05')wrong('MAG WIND','210/05',P.wind);return;}
+      if(k==='R2'){if(!sp){S.fb={c:'info',t:'BARO is for CAT I approaches. This is CAT III – use RADIO (R3).'};return;}if(!/^\d{2,4}$/.test(sp)){fmt('RADIO');return;}take();P.baro=sp;P.radio='';S.mistakes++;S.fb={c:'bad',t:'This is a CAT III approach – use RADIO 50, not BARO. Your BARO entry wiped the RADIO value.'};return;}
+      if(k==='R3'){if(!sp){empty('RADIO');return;}if(!/^(\d{1,4}|NO)$/.test(sp)){fmt('RADIO');return;}take();P.radio=sp;P.baro='';if(!okVal(sp,OFP.radio))wrong('RADIO',OFP.radio);return;}
       if(k==='R4'){P.conf='3';P.confTouched=true;S.mistakes++;S.fb={c:'bad',t:'Your checklist lands with FULL flaps – press R5.'};return;}
       if(k==='R5'){P.conf='FULL';P.confTouched=true;return;}
       if(sp)msg('NOT ALLOWED',true);return;}
@@ -1245,6 +1248,7 @@ const API={onChange:null,M,OFP,paper,
 window.MCDU=API;
 })();
 </script>
+
 
 
 
