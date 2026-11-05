@@ -618,7 +618,10 @@ if(st.view==='list'){const el=document.getElementById('ph-'+st.p);if(el)el.scrol
     <div class="seg" id="trMode"><button type="button" data-m="learn" class="on">Learn</button><button type="button" data-m="test">Test</button></div>
     <div class="tr-stat" id="trStat"></div>
     <button type="button" class="ghost" id="trRestart" style="flex:0 0 auto">Restart</button>
-    <button type="button" class="ghost" id="trExit" style="flex:0 0 auto">Exit trainer</button>
+    <button type="button" class="ghost" id="trDrills" style="flex:0 0 auto">Drills</button>
+    <button type="button" class="ghost trainbtn" id="trMcdu" style="flex:0 0 auto">MCDU trainer</button>
+    <button type="button" class="ghost" id="trSteps" style="flex:0 0 auto">Step-by-step</button>
+    <button type="button" class="ghost" id="trList" style="flex:0 0 auto">List view</button>
   </div>
   <div id="trMain" style="min-height:0;display:contents"></div>
 </div>
@@ -1011,7 +1014,10 @@ document.addEventListener('click',e=>{if(!e.target.closest('.tr'))return;const k
   if(b.dataset.drill){start(b.dataset.drill);return;}
   if(b.dataset.tab&&T){T.tab=b.dataset.tab;paint();return;}
   if(b.dataset.m){T0mode=b.dataset.m;if(T)start(T.drill);else[...el('trMode').children].forEach(x=>x.classList.toggle('on',x.dataset.m===T0mode));return;}
-  if(!T){if(b.id==='trExit')closeT();if(b.id==='trRestart')pick();return;}
+  if(b.id==='trSteps'||b.id==='trList'){closeT();try{st.view=b.id==='trList'?'list':'check';save();render();}catch(e){}return;}
+  if(b.id==='trMcdu'){closeT();window.openMcdu();return;}
+  if(b.id==='trDrills'){pick();return;}
+  if(!T){if(b.id==='trRestart')pick();return;}
   switch(b.id){
    case 'trConfirm':{if(!T.t0)T.t0=Date.now();const st=cur();complete(`✓ ${st.i}`);paint(true);break;}
    case 'trExtra':{const m=mapOf(cur());m.extra.fn(T.s);T.fb={c:'info',t:'Ground power connected – EXT PWR AVAIL is lit.'};paint();break;}
@@ -1025,15 +1031,16 @@ document.addEventListener('click',e=>{if(!e.target.closest('.tr'))return;const k
    case 'trPick':pick();break;
    case 'trExit':closeT();break;
   }});
-function openT(){el('tr').classList.add('show');document.querySelector('.app').style.visibility='hidden';pick();}
+function openT(){el('tr').classList.add('show');document.querySelector('.app').style.visibility='hidden';if(T)paint(true);else pick();}
 function closeT(){el('tr').classList.remove('show');document.querySelector('.app').style.visibility='';}
-window.openTrainer=openT;window.__trainer=()=>T;
+window.openTrainer=openT;setTimeout(openT,0);window.__trainer=()=>T;
 window.addEventListener('resize',scaleStage);
 document.addEventListener('keydown',e=>{if(!el('tr').classList.contains('show'))return;if(e.key==='Escape'){closeT();return;}
   if(T&&T.tab===MCD){const k=e.key.toUpperCase();if(/^[A-Z0-9]$/.test(k)||k==='/'||k==='.'){mcduKey(k);e.preventDefault();}else if(e.key==='Backspace'){mcduKey('CLR');e.preventDefault();}else if(e.key===' '){mcduKey('SP');e.preventDefault();}}});
 setTimeout(()=>{if(window.MCDU){const prev=window.MCDU.onChange;window.MCDU.onChange=s=>{if(T&&s===T.mc&&el('tr').classList.contains('show')){checkCurrent();paint(true);}else if(prev)prev(s);};}},0);
 })();
 </script>
+
 
 
 
@@ -1078,7 +1085,7 @@ setTimeout(()=>{if(window.MCDU){const prev=window.MCDU.onChange;window.MCDU.onCh
     <div class="seg" id="mcMode"><button type="button" data-mm="learn" class="on">Learn</button><button type="button" data-mm="test">Test</button></div>
     <div class="tr-stat" id="mcStat"></div>
     <button type="button" class="ghost" id="mcRestart" style="flex:0 0 auto">Restart</button>
-    <button type="button" class="ghost" id="mcExit" style="flex:0 0 auto">Exit trainer</button>
+    <button type="button" class="ghost" id="mcExit" style="flex:0 0 auto">Back to cockpit trainer</button>
   </div>
   <div id="mcMain" style="min-height:0;display:contents"></div>
 </div>
@@ -1320,7 +1327,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.mc'))return;const b
   if(b.dataset.k){key(b.dataset.k);return;}
   if(b.dataset.mdrill){start(b.dataset.mdrill);return;}
   if(b.dataset.mm){mode=b.dataset.mm;if(D)start(D.d);else[...$('mcMode').children].forEach(x=>x.classList.toggle('on',x.dataset.mm===mode));return;}
-  switch(b.id){case 'mcExit':closeM();break;case 'mcRestart':D?start(D.d):pick();break;case 'mcAgain':start(D.d);break;case 'mcToTest':mode='test';start(D.d);break;case 'mcPick':pick();break;
+  switch(b.id){case 'mcExit':closeM();window.openTrainer&&window.openTrainer();break;case 'mcRestart':D?start(D.d):pick();break;case 'mcAgain':start(D.d);break;case 'mcToTest':mode='test';start(D.d);break;case 'mcPick':pick();break;
     case 'mcReveal':S.hints++;D.reveal=D.i;paint();break;case 'mcDone':if(!S.t0)S.t0=Date.now();D.i++;adv(false);paint();break;}});
 document.addEventListener('keydown',e=>{if(!$('mc').classList.contains('show')||!S)return;if(e.key==='Escape'){closeM();return;}
   const k=e.key.toUpperCase();if(/^[A-Z0-9]$/.test(k)||k==='/'||k==='.'){key(k);e.preventDefault();}else if(e.key==='Backspace'){key('CLR');e.preventDefault();}else if(e.key===' '){key('SP');e.preventDefault();}});
@@ -1336,6 +1343,7 @@ const API={onChange:null,M,OFP,paper,
 window.MCDU=API;
 })();
 </script>
+
 
 
 
