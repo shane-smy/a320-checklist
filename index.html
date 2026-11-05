@@ -46,7 +46,7 @@ aside{background:var(--panel);border-right:1px solid var(--line);display:flex;fl
 .ph .c{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
 .ph.done{color:var(--green)}
 .side-foot{padding:10px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.side-foot #listBtn,.side-foot #trainBtn{grid-column:1 / -1}
+.side-foot #listBtn{grid-column:1 / -1}
 .trainbtn{border-color:color-mix(in srgb,var(--cyan) 50%,var(--line));color:var(--cyan)}
 .ghost{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:14px;flex:1}
 .ghost.on{border-color:var(--cyan);color:var(--cyan)}
@@ -175,6 +175,7 @@ main{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
     <nav class="phases" id="phases" aria-label="Phases"></nav>
     <div class="side-foot">
       <button class="ghost trainbtn" id="trainBtn" type="button">Cockpit trainer</button>
+      <button class="ghost trainbtn" id="mcduBtn" type="button">MCDU trainer</button>
       <button class="ghost" id="listBtn" type="button">List view</button>
       <button class="ghost" id="refBtn" type="button">Reference</button>
       <button class="ghost" id="resetBtn" type="button">New flight</button>
@@ -186,6 +187,7 @@ main{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
     <div class="topbar">
       <select id="phaseSel" aria-label="Phase"></select>
       <button class="ghost" id="trainBtn2" type="button">Trainer</button>
+      <button class="ghost" id="mcduBtn2" type="button">MCDU</button>
       <button class="ghost" id="listBtn2" type="button">List</button>
       <button class="ghost" id="refBtn2" type="button">Ref</button>
       <button class="ghost" id="resetBtn2" type="button">Reset</button>
@@ -351,7 +353,8 @@ function move(dir){
 function setPhase(p){st.p=p;st.view='check';const P=DATA[p];let n=0;for(let i=0;i<P.s.length;i++){if(!st.done[id(p,i)]){n=i;break;}}st.s=n;save();render();document.getElementById('main').scrollTop=0;}
 document.addEventListener('click',e=>{
   const t=e.target.closest('button'); if(!t) return;
-  if(t.closest('.tr')) return;
+  if(t.closest('.tr')||t.closest('.mc')) return;
+  if(t.id==='mcduBtn'||t.id==='mcduBtn2') {window.openMcdu();return;}
   if(t.id==='trainBtn'||t.id==='trainBtn2') window.openTrainer();
   else if(t.id==='pullBtn'||t.id==='pullBtn2') pull(true);
   else if(t.dataset.ep!==undefined) openEditor(+t.dataset.ep,+t.dataset.es);
@@ -934,6 +937,296 @@ function closeT(){el('tr').classList.remove('show');document.querySelector('.app
 window.openTrainer=openT;window.__trainer=()=>T;
 window.addEventListener('resize',scaleStage);
 document.addEventListener('keydown',e=>{if(el('tr').classList.contains('show')&&e.key==='Escape')closeT();});
+})();
+</script>
+
+
+<style>
+/* ---------- MCDU trainer ---------- */
+.mc{position:fixed;inset:0;z-index:21;background:var(--bg);display:none;grid-template-rows:auto 1fr;min-height:0;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.mc.show{display:grid}
+.mcdu{width:470px;background:linear-gradient(180deg,#6d859c,#5c7389 40%,#506679);border-radius:14px;padding:16px 14px 18px;box-shadow:inset 0 0 0 2px #2d3d4c,0 10px 30px rgba(0,0,0,.5);user-select:none;-webkit-user-select:none}
+.mc-scrwrap{display:grid;grid-template-columns:34px 1fr 34px;gap:4px;align-items:stretch}
+.lsk{display:flex;flex-direction:column;justify-content:space-around;padding:30px 0 34px}
+.lsk b{display:block;width:30px;height:17px;border-radius:3px;background:linear-gradient(#3a434d,#1c2228);border:1px solid #0b0e11;box-shadow:0 2px 0 #0b0e11;cursor:pointer;position:relative}
+.lsk b:after{content:"";position:absolute;left:7px;right:7px;top:7px;height:2px;background:#cdd5dc}
+.lsk b:active{transform:translateY(1px)}
+.mscr{background:#030507;border:8px solid #1f262d;border-radius:6px;padding:6px 6px 8px;font:600 15.5px/1 "IBM Plex Mono",ui-monospace,Menlo,monospace;box-shadow:inset 0 0 26px rgba(0,0,0,.95)}
+.mrow{height:21px;white-space:pre;display:flex;align-items:center;letter-spacing:.4px}
+.mrow.sm{font-size:11.5px;height:15px;letter-spacing:.6px}
+.mrow.sp{margin-top:6px}
+.cw{color:#f2f2f2}.cg{color:#36e36f}.cc{color:#3fc8ff}.ca{color:#ffa928}.cm{color:#e070f0}.cy{color:#f6e64a}.cx{color:#5d6670}
+.mkeys{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.krow{display:grid;gap:6px}
+.mk{height:34px;border-radius:5px;background:linear-gradient(#2f363e,#171b20);border:1px solid #07090b;box-shadow:0 2px 0 #07090b,inset 0 1px 0 rgba(255,255,255,.08);color:#e9eef3;font:700 10.5px/1.05 var(--display);letter-spacing:.3px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;padding:0 2px}
+.mk:active{transform:translateY(1px);box-shadow:0 1px 0 #07090b}
+.mk.big{font-size:14px}
+.mk.blank{visibility:hidden}
+.mk.hlk,.lsk b.hlk{outline:3px solid var(--cyan);outline-offset:2px;animation:hlp 1.2s ease-in-out infinite}
+.kpads{display:grid;grid-template-columns:150px 1fr;gap:12px}
+.num{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.alpha{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.paper{font:500 12.5px/1.55 "IBM Plex Mono",ui-monospace,monospace;color:#d5dde7}
+.paper b{color:var(--cyan);font-weight:600;display:inline}
+.paper .h{font-family:var(--display);font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-top:6px}
+.metar{font-family:var(--mono);font-size:12px;color:var(--amber);background:var(--panel-2);border-radius:6px;padding:6px 8px;display:block;margin-top:3px;white-space:normal}
+.keyseq{font-family:var(--mono);font-size:13px;color:var(--cyan)}
+</style>
+
+<div class="mc" id="mc" aria-label="MCDU trainer">
+  <div class="tr-top">
+    <h2 id="mcTitle">MCDU trainer</h2>
+    <div class="seg" id="mcMode"><button type="button" data-mm="learn" class="on">Learn</button><button type="button" data-mm="test">Test</button></div>
+    <div class="tr-stat" id="mcStat"></div>
+    <button type="button" class="ghost" id="mcRestart" style="flex:0 0 auto">Restart</button>
+    <button type="button" class="ghost" id="mcExit" style="flex:0 0 auto">Exit trainer</button>
+  </div>
+  <div id="mcMain" style="min-height:0;display:contents"></div>
+</div>
+
+<script>
+(()=>{
+const BKEY='a320-mcdu-best-v1';let best={};try{best=JSON.parse(localStorage.getItem(BKEY)||'{}')||{}}catch(e){}
+const saveBest=()=>{try{localStorage.setItem(BKEY,JSON.stringify(best))}catch(e){}};
+const $=id=>document.getElementById(id);
+// practice paperwork (made-up numbers for training)
+const OFP={flt:'SHN123',from:'EGSS',to:'EGPH',ci:'15',crz:'FL340',tmp:'-54',rwy:'22',sid:'UTAV1R',appr:'ILS24',star:'INPI1E',zfw:'58.2',cg:'27.0',block:'6.8',
+  v1:'138',vr:'141',v2:'143',flaps:'1/UP0.7',flex:'58',transAlt:'6000',qnh:'998',temp:'8',wind:'210/05',radio:'50',ils:'108.90',crs:'240'};
+const DRILLS={pre:{t:'Preflight MCDU set-up',d:'INIT, winds, fuel, departure and arrival, discontinuities and takeoff performance – Stansted to Edinburgh.',re:/^S04-/},
+  appr:{t:'Approach preparation',d:'In cruise: arrival, PERF APPR (QNH, temperature, wind, minimums, landing flaps) and RAD NAV check.',re:/^S13-(0[3-9]|10)$/}};
+let mode='learn',S=null;
+function fresh(drill){const s={page:'INIT',sp:'ALIGN IRS',spMsg:true,clearedMsg:false,
+  init:{st:'empty'},irsSeen:false,wind:{st:'empty'},
+  b:{zfw:'',cg:'',plan:'none'},
+  f:{legs:[{n:'EGSS',t:'orig'},{n:'EGPH',t:'dest'}],top:0},dep:{rwy:'',sid:'',done:false,stage:'rwy'},arr:{appr:'',star:'',done:false,stage:'appr'},latrev:null,
+  perf:{ph:'TO',v1:'',vr:'',v2:'',flaps:'',flex:'',upPending:true,toConfirmed:false,qnh:'',temp:'',wind:'',baro:'',radio:'',conf:'FULL',confTouched:false},
+  radSeen:false,mistakes:0,hints:0,t0:null,tEnd:null,fb:null};
+  if(drill==='appr'){Object.assign(s,{sp:'',spMsg:false,clearedMsg:true,irsSeen:true});s.init.st='loaded';s.wind.st='loaded';Object.assign(s.b,{zfw:OFP.zfw,cg:OFP.cg,plan:'confirmed'});
+    loadRoute(s);insertDep(s,'22','UTAV1R');s.f.legs=s.f.legs.filter(l=>l.t!=='disc'&&!l.dup);s.perf.ph='CRZ';Object.assign(s.perf,{v1:OFP.v1,vr:OFP.vr,v2:OFP.v2,flaps:OFP.flaps,flex:OFP.flex,upPending:false,toConfirmed:true});s.page='F-PLN';}
+  return s;}
+function loadRoute(s){s.f.legs=[{n:'EGSS',t:'orig'},{n:'UTAVA',t:'wpt',aw:'Q75'},{n:'BUZAD',t:'wpt',aw:'Q75'},{n:'TNT',t:'wpt',aw:'T420'},{n:'POL',t:'wpt',aw:'UN57'},{n:'INPIP',t:'wpt',aw:'UN601'},{n:'EGPH',t:'dest'}];}
+function insertDep(s,rwy,sid){const L=s.f.legs;const i=L.findIndex(l=>l.n==='UTAVA');const rest=L.slice(i);
+  s.f.legs=[{n:'EGSS'+rwy,t:'orig'},{n:'D221C',t:'wpt',aw:sid,c:'4000'},{n:'BKY',t:'wpt',aw:sid,c:'+3000'},{n:'UTAVA',t:'wpt',aw:sid,c:'4000'},{t:'disc'},Object.assign({},rest[0],{dup:true}),...rest.slice(1)];
+  s.dep.done=true;}
+function insertArr(s){const L=s.f.legs;const i=L.findIndex(l=>l.n==='INPIP');
+  s.f.legs=[...L.slice(0,i+1),{n:'INREV',t:'wpt',aw:OFP.star,c:'FL200'},{n:'TARTN',t:'wpt',aw:OFP.star,c:'230/FL070'},{t:'disc'},{n:'CI24',t:'wpt',aw:'ILS24',c:'3000'},{n:'RW24',t:'wpt',aw:'ILS24',c:'140'},{n:'EGPH',t:'dest'}];
+  s.arr.done=true;}
+// ---------- screen model: 14 rows of 24 columns
+function blank(){return Array.from({length:14},()=>Array.from({length:24},()=>[' ','cw']));}
+function put(g,r,col,txt,c='cw'){for(let i=0;i<txt.length;i++){const x=col+i;if(x>=0&&x<24)g[r][x]=[txt[i],c];}}
+const L=(g,r,t,c)=>put(g,r,0,t,c),R=(g,r,t,c)=>put(g,r,24-t.length,t,c),C=(g,r,t,c)=>put(g,r,Math.floor((24-t.length)/2),t,c);
+const box=n=>'□'.repeat(n);
+function pg(s){const g=blank(),p=s.page;
+  if(p==='INIT'){C(g,0,'INIT');R(g,0,'→','cw');
+    const ld=s.init.st==='loaded';
+    L(g,1,' CO RTE');R(g,1,'FROM/TO  ');L(g,2,ld?'NONE':'[        ]','cc');R(g,2,ld?OFP.from+'/'+OFP.to:box(4)+'/'+box(4),ld?'cc':'ca');
+    R(g,3,'INIT ');R(g,4,s.init.st==='loading'?'REQUEST ':ld?'':'REQUEST*','ca');L(g,3,'ALTN/CO RTE');L(g,4,ld?'NONE':'----/----------',ld?'cc':'cw');
+    L(g,5,'FLT NBR');L(g,6,ld?OFP.flt:box(8),ld?'cc':'ca');R(g,6,'IRS INIT>');
+    R(g,8,'WIND>');L(g,9,'COST INDEX');L(g,10,ld?OFP.ci:'---',ld?'cc':'cw');R(g,9,'TROPO');R(g,10,'36090','cc');
+    L(g,11,'CRZ FL/TEMP');L(g,12,ld?OFP.crz+'/'+OFP.tmp+'°':'-----/---°',ld?'cc':'cw');R(g,11,'GND TEMP');R(g,12,ld?'11°':'---°',ld?'cc':'cw');}
+  else if(p==='INITB'){C(g,0,'INIT');L(g,0,'←');const ok=s.b.plan==='confirmed',planned=s.b.plan==='planned'||ok;
+    L(g,1,'TAXI');L(g,2,'0.2','cc');L(g,3,'TRIP/TIME');L(g,4,ok?'3.1/0052':'---.-/----',ok?'cg':'cw');L(g,5,'RTE RSV/%');L(g,6,ok?'0.2/5.0':'---.-/5.0',ok?'cg':'cw');
+    L(g,7,'ALTN/TIME');L(g,8,ok?'1.1/0024':'---.-/----',ok?'cg':'cw');L(g,9,'FINAL/TIME');L(g,10,ok?'1.0/0030':'---.-/0030',ok?'cg':'cw');L(g,11,'MIN DEST FOB');L(g,12,ok?'2.1':'---.-',ok?'cg':'cw');
+    R(g,1,'ZFW/ZFWCG');R(g,2,s.b.zfw?s.b.zfw+'/'+s.b.cg:box(2)+'.'+box(1)+'/'+box(2)+'.'+box(1),s.b.zfw?'cc':'ca');
+    R(g,3,'BLOCK');R(g,4,ok?OFP.block:planned?OFP.block:box(2)+'.'+box(1),ok?'cc':planned?'cy':'ca');
+    if(s.b.plan==='none'||s.b.plan==='computing'){R(g,5,'FUEL ');R(g,6,s.b.plan==='computing'?'PLANNING ':'PLANNING*','ca');}
+    else if(s.b.plan==='planned'){R(g,5,'BLOCK '+OFP.block+' ');R(g,6,'CONFIRM*','ca');}
+    R(g,7,'TOW/LW');R(g,8,ok?'64.8/61.7':'---.-/---.-',ok?'cg':'cw');R(g,9,'TRIP WIND');R(g,10,'HD015','cc');R(g,11,'EXTRA/TIME');R(g,12,ok?'1.2/0040':'---.-/----',ok?'cg':'cw');}
+  else if(p==='IRS'){C(g,0,'IRS INIT');L(g,1,'LAT');L(g,2,'5153.1N','cc');R(g,1,'LONG');R(g,2,'00014.1E','cc');L(g,3,'REFERENCE');L(g,4,'EGSS/22','cg');R(g,3,'GPS SET');R(g,4,'ALIGNED','cg');
+    L(g,6,'IRS1 ALIGNED ON GPS','cg');L(g,8,'IRS2 ALIGNED ON GPS','cg');L(g,10,'IRS3 ALIGNED ON GPS','cg');L(g,12,'<RETURN');}
+  else if(p==='WIND'){C(g,0,'CLIMB WIND');L(g,1,'TRU WIND/ALT');const w=s.wind.st==='loaded';
+    const rows=w?['260°/018/FL050','265°/032/FL150','270°/048/FL250','275°/061/FL340']:['[ ]°/[ ]/[   ]','','',''];
+    rows.forEach((t,i)=>{if(t)L(g,2+i*2,t,w?'cc':'cc');});R(g,7,'WIND ');R(g,8,s.wind.st==='loading'?'REQUEST ':w?'':'REQUEST*','ca');L(g,12,'<RETURN');R(g,12,'NEXT PHASE>');}
+  else if(p==='F-PLN'){L(g,0,' FROM');R(g,0,OFP.flt+'  ');const legs=s.f.legs.filter(l=>l.t!=='dest');const top=s.f.top;
+    for(let k=0;k<5;k++){const l=legs[top+k];const r=1+k*2;if(!l){if(top+k===legs.length){C(g,r+1,'---- END OF F-PLN ----');}continue;}
+      if(l.t==='disc'){C(g,r+1,'---F-PLN DISCONTINUITY--');continue;}
+      if(l.aw)L(g,r,' '+l.aw,'cw');R(g,r,'TIME  SPD/ALT ');
+      L(g,r+1,l.n,top+k===0?'cw':'cg');R(g,r+1,(l.c?(' '+l.c).slice(-9):'  ---/ ----'),l.c?'cm':'cg');}
+    L(g,11,' DEST   TIME  DIST  EFOB');const d=s.f.legs.find(l=>l.t==='dest');L(g,12,d.n+(s.arr.done?'24':'  ')+'  0052  352  1.7');}
+  else if(p==='LATREV'){const l=s.latrev;C(g,0,'LAT REV FROM '+l.n);L(g,1,' 5153.1N/00014.1E','cg');
+    if(l.t==='orig')L(g,2,'<DEPARTURE');if(l.t==='dest')R(g,2,'ARRIVAL>');if(l.t==='wpt'){L(g,4,'<HOLD','cx');R(g,4,'VIA/GO TO','cx');}L(g,12,'<RETURN');}
+  else if(p==='DEP'){C(g,0,'DEPARTURES FROM EGSS');L(g,1,' RWY      SID    TRANS');L(g,2,(s.dep.rwy||'---').padEnd(9)+(s.dep.sid||'------').padEnd(8)+(s.dep.sid?'NONE':'----'),'cy');
+    const list=s.dep.stage==='rwy'?[['04','3049M CRS043'],['22','3049M CRS223']]:[['UTAV1R',''],['LAMS2R',''],['BUZA1R',''],['CPT1R','']];
+    L(g,3,s.dep.stage==='rwy'?' AVAILABLE RUNWAYS':' SIDS     AVAILABLE');list.forEach((it,i)=>{L(g,4+i*2,'←'+it[0].padEnd(8)+it[1],'cc');});
+    L(g,12,'<RETURN');if(s.dep.rwy&&s.dep.sid)R(g,12,'INSERT*','ca');}
+  else if(p==='ARR'){C(g,0,'ARRIVAL TO EGPH');L(g,1,' APPR    VIA    STAR');L(g,2,(s.arr.appr||'------').padEnd(8)+'NONE   '+(s.arr.star||'------'),'cy');
+    const list=s.arr.stage==='appr'?['ILS24','ILS06','RNV24']:['INPI1E','TLA6E','GRICE1E'];
+    L(g,3,s.arr.stage==='appr'?' APPR AVAILABLE':' STARS    AVAILABLE');list.forEach((it,i)=>L(g,4+i*2,'←'+it,'cc'));L(g,12,'<RETURN');if(s.arr.appr&&s.arr.star)R(g,12,'INSERT*','ca');}
+  else if(p==='PERF'){const P=s.perf;
+    if(P.ph==='TO'){C(g,0,'TAKE OFF RWY '+(s.dep.rwy||'--'),'cg');L(g,1,' V1  FLP RETR');R(g,1,'RWY ');L(g,2,P.v1?P.v1:box(3),P.v1?'cc':'ca');put(g,2,5,'F=162','cg');R(g,2,s.dep.rwy||'---','cg');
+      L(g,3,' VR  SLT RETR');R(g,3,'TO SHIFT ');L(g,4,P.vr?P.vr:box(3),P.vr?'cc':'ca');put(g,4,5,'S=208','cg');R(g,4,'[M][  ]*','cc');
+      L(g,5,' V2     CLEAN');R(g,5,'FLAPS/THS');L(g,6,P.v2?P.v2:box(3),P.v2?'cc':'ca');put(g,6,6,'O=218','cg');R(g,6,P.flaps||'[ ]/[   ]','cc');
+      L(g,7,'TRANS ALT');R(g,7,'FLEX TO TEMP');L(g,8,OFP.transAlt,'cc');R(g,8,P.flex?P.flex+'°':'[  ]°','cc');
+      L(g,9,'THR RED/ACC');R(g,9,'ENG OUT ACC');L(g,10,'1600/1600','cc');R(g,10,'1600','cc');
+      if(P.upPending){R(g,11,'CONFIRM ');R(g,12,'TO DATA*','ca');}else R(g,12,'NEXT PHASE>');L(g,12,' UPLINK','cx');}
+    else if(P.ph==='CLB'||P.ph==='CRZ'||P.ph==='DES'){const t={CLB:'CLB',CRZ:'CRZ',DES:'DES'}[P.ph];C(g,0,t,P.ph==='CRZ'&&S.drill==='appr'?'cg':'cw');L(g,1,'ACT MODE');L(g,2,'MANAGED','cg');L(g,3,'CI');L(g,4,OFP.ci,'cc');L(g,5,'MANAGED');L(g,6,P.ph==='DES'?'.78/290':'.78','cg');
+      if(P.ph==='CRZ'){R(g,5,'DES CABIN RATE');R(g,6,'-350FT/MN','cc');}
+      L(g,11,' PREV');L(g,12,'<PHASE');R(g,11,'NEXT ');R(g,12,'PHASE>');}
+    else if(P.ph==='APPR'){C(g,0,'APPR');L(g,1,'QNH');L(g,2,P.qnh||box(4),P.qnh?'cc':'ca');R(g,1,'FINAL');R(g,2,'ILS24','cg');
+      L(g,3,'TEMP');L(g,4,P.temp?P.temp+'°':'[ ]°','cc');R(g,3,'BARO');R(g,4,P.baro||'[    ]','cc');
+      L(g,5,'MAG WIND');L(g,6,P.wind?P.wind.replace('/','°/'):'[ ]°/[ ]','cc');R(g,5,'RADIO');R(g,6,P.radio||'[    ]','cc');
+      L(g,7,'TRANS FL');L(g,8,'FL060','cc');R(g,7,'LDG CONF');R(g,8,(P.conf==='3'?'CONF3*':'CONF3 '),P.conf==='3'?'cc':'cc');
+      L(g,9,'VAPP   VLS');L(g,10,(P.wind?'134':'137')+'    129','cg');R(g,10,(P.conf==='FULL'?'FULL*':'FULL '),'cc');
+      L(g,11,' PREV');L(g,12,'<PHASE');R(g,11,'NEXT ');R(g,12,'PHASE>');}}
+  else if(p==='RAD'){C(g,0,'RADIO NAV');L(g,1,'VOR1/FREQ');L(g,2,'[ ]/[  . ]','cc');R(g,1,'FREQ/VOR2');R(g,2,'[  . ]/[ ]','cc');L(g,3,'CRS');L(g,4,'[ ]','cc');R(g,3,'CRS');R(g,4,'[ ]','cc');
+    L(g,5,'LS /FREQ');L(g,6,s.arr.done?'IEH/'+OFP.ils:'[  ]/[   . ]',s.arr.done?'cm':'cc');L(g,7,'CRS');L(g,8,s.arr.done?OFP.crs:'[ ]',s.arr.done?'cm':'cc');
+    L(g,9,'ADF1/FREQ');L(g,10,'[ ]/[    . ]','cc');R(g,9,'FREQ/ADF2');R(g,10,'[    . ]/[ ]','cc');}
+  // scratchpad
+  L(g,13,s.sp,'cw');return g;}
+function scrHTML(g){return g.map((row,r)=>{let h='',cur=null,buf='';for(const [ch,c] of row){if(c!==cur){if(buf)h+=`<span class="${cur}">${esc(buf)}</span>`;buf='';cur=c;}buf+=ch;}if(buf)h+=`<span class="${cur}">${esc(buf)}</span>`;
+  const sm=r%2===1&&r<13;return `<div class="mrow${sm?' sm':''}${r===13?' sp':''}">${h}</div>`;}).join('');}
+// ---------- steps
+const okVal=(a,b)=>String(a).replace(/^0+/,'')===String(b).replace(/^0+/,'');
+const M={
+ 'S04-00':{ok:s=>s.clearedMsg,keys:s=>['CLR'],hint:'Press CLR to clear the white message from the scratchpad (bottom line).'},
+ 'S04-01':{ok:s=>s.init.st==='loaded',keys:s=>s.page!=='INIT'?['INIT']:['R2'],hint:'On the INIT page, press the right-hand key next to INIT REQUEST* (R2).'},
+ 'S04-02':{ok:s=>s.irsSeen,keys:s=>s.page!=='INIT'?['INIT']:['R3'],hint:'Press the key next to IRS INIT> (R3) and check the IRS are aligned. Then press <RETURN.'},
+ 'S04-03':{ok:s=>s.wind.st==='loaded',keys:s=>s.page==='WIND'?['R4']:s.page!=='INIT'?['INIT']:['R4'],hint:'From INIT press WIND> (R4), then WIND REQUEST* (R4).'},
+ 'S04-04':{ok:s=>s.b.zfw===OFP.zfw&&s.b.cg===OFP.cg,keys:s=>s.page==='INITB'?['R1']:s.page==='INIT'?['NEXT']:['INIT'],hint:'INIT, then the → key (next page) for INIT B. Press R1 next to ZFW/ZFWCG with an empty scratchpad – it fills itself in.'},
+ 'S04-05':{ok:s=>s.b.plan==='confirmed',keys:s=>s.page==='INITB'?['R3']:s.page==='INIT'?['NEXT']:['INIT'],hint:'On INIT B press FUEL PLANNING* (R3), wait for the block fuel, then CONFIRM* (R3).'},
+ 'S04-06':{ok:s=>s.dep.done,keys:s=>s.page==='F-PLN'?['L1']:s.page==='LATREV'?['L1']:s.page==='DEP'?(s.dep.rwy&&s.dep.sid?['R6']:s.dep.stage==='rwy'?['L3']:['L2']):['F-PLN'],hint:'F-PLN, then L1 (EGSS) → <DEPARTURE. Choose runway 22, then UTAV1R, then INSERT* (R6).'},
+ 'S04-07':{ok:s=>s.arr.done,keys:s=>s.page==='F-PLN'?['L6']:s.page==='LATREV'?['R1']:s.page==='ARR'?(s.arr.appr&&s.arr.star?['R6']:s.arr.stage==='appr'?['L2']:['L2']):['F-PLN'],hint:'F-PLN, then L6 (destination EGPH) → ARRIVAL>. Choose ILS24, then INPI1E, then INSERT* (R6).'},
+ 'S04-08':{ok:s=>!s.f.legs.some(l=>l.t==='disc'||l.dup),keys:s=>{if(s.page!=='F-PLN')return['F-PLN'];const legs=s.f.legs.filter(l=>l.t!=='dest');const i=legs.findIndex(l=>l.t==='disc'||l.dup);if(i<0)return[];if(i<s.f.top)return['DOWN'];if(i>s.f.top+4)return['UP'];return s.sp==='CLR'?['L'+(i-s.f.top+1)]:['CLR'];},hint:'Scroll the F-PLN with the arrow keys (↑ moves the list up to show later waypoints). For each DISCONTINUITY (and the second UTAVA): press CLR so the scratchpad says CLR, then the left key next to the line.'},
+ 'S04-10':{ok:s=>okVal(s.perf.v1,OFP.v1)&&okVal(s.perf.vr,OFP.vr)&&okVal(s.perf.v2,OFP.v2),keys:s=>s.page!=='PERF'?['PERF']:!okVal(s.perf.v1,OFP.v1)?['L1']:!okVal(s.perf.vr,OFP.vr)?['L2']:['L3'],hint:`PERF page. Type 138 and press L1 (V1), 141 → L2 (VR), 143 → L3 (V2).`},
+ 'S04-11':{ok:s=>s.perf.flaps===OFP.flaps,keys:s=>s.page!=='PERF'?['PERF']:['R3'],hint:'Type 1/UP0.7 and press R3 (FLAPS/THS).'},
+ 'S04-12':{ok:s=>okVal(s.perf.flex,OFP.flex),keys:s=>s.page!=='PERF'?['PERF']:['R4'],hint:'Type 58 and press R4 (FLEX TO TEMP).'},
+ 'S04-13':{ok:s=>s.perf.toConfirmed,keys:s=>s.page!=='PERF'?['PERF']:['R6'],hint:'Press CONFIRM TO DATA* (R6, bottom right).'},
+ 'S04-14':{ok:s=>s.page==='PERF'&&s.perf.ph==='TO',keys:s=>['PERF'],hint:'Look at TRANS ALT on the PERF TAKE OFF page (L4) – it should say 6000.'},
+ 'S13-04':{ok:s=>s.arr.done,keys:s=>M['S04-07'].keys(s),hint:'F-PLN, then L6 (EGPH) → ARRIVAL>. Choose ILS24, then INPI1E, then INSERT* (R6).'},
+ 'S13-05':{ok:s=>okVal(s.perf.qnh,OFP.qnh)&&okVal(s.perf.temp,OFP.temp)&&s.perf.wind==='210/05',keys:s=>s.page!=='PERF'?['PERF']:s.perf.ph!=='APPR'?['R6']:!okVal(s.perf.qnh,OFP.qnh)?['L1']:!okVal(s.perf.temp,OFP.temp)?['L2']:['L3'],hint:'PERF, then NEXT PHASE> (R6) until APPR. Type 998 → L1 (QNH), 8 → L2 (TEMP), 210/05 → L3 (MAG WIND).'},
+ 'S13-06':{ok:s=>okVal(s.perf.radio,OFP.radio),keys:s=>s.page!=='PERF'||s.perf.ph!=='APPR'?['PERF']:['R3'],hint:'CAT III approach: type 50 and press R3 (RADIO). Entering a BARO value would wipe it.'},
+ 'S13-07':{ok:s=>s.perf.conf==='FULL'&&s.perf.confTouched,keys:s=>s.page!=='PERF'||s.perf.ph!=='APPR'?['PERF']:['R5'],hint:'Landing flaps FULL: press R5 so the star (*) sits next to FULL.'},
+ 'S13-08':{ok:s=>s.radSeen&&s.arr.done,keys:s=>['RAD'],hint:'Press RAD NAV and check the ILS: 108.90, course 240.'},
+};
+function stepsOf(d){const out=[];DATA.forEach(P=>P.s.forEach(x=>{if(DRILLS[d].re.test(x.k)||(!/^S\d\d-/.test(x.k)&&P.s.some(y=>DRILLS[d].re.test(y.k))))out.push(Object.assign({phase:P.t},x));}));return out;}
+let D=null; // drill session
+function start(d){S=fresh(d);S.drill=d;D={d,steps:stepsOf(d),i:0,reveal:-1,newBest:false};adv(true);paint();}
+const cur=()=>D&&D.steps[D.i];const mp=st=>st&&M[st.k];
+function adv(initial){while(D.i<D.steps.length){const m=mp(cur());if(m&&m.ok(S)){if(!initial)S.fb={c:'ok',t:'✓ '+cur().i+(S.fb&&S.fb.c==='ok'&&!S.fb.t.startsWith('✓')?' – '+S.fb.t:'')};D.i++;continue;}break;}
+  if(D.i>=D.steps.length&&!S.tEnd){S.tEnd=Date.now();const t=(S.tEnd-(S.t0||S.tEnd))/1000,k=D.d+'-'+mode,b=best[k];if(!b||S.mistakes<b.m||(S.mistakes===b.m&&t<b.t)){best[k]={t,m:S.mistakes};saveBest();D.newBest=true;}}}
+function msg(t,mistake){S.sp=t;S.spMsg=true;if(mistake){S.mistakes++;S.fb={c:'bad',t:t==='FORMAT ERROR'?'FORMAT ERROR – check what you typed and the format the field expects.':t==='NOT ALLOWED'?'NOT ALLOWED – that key does nothing there.':t};}}
+function wrong(field,should){S.mistakes++;S.fb={c:'bad',t:`${field} doesn't match your paperwork – it should be ${should}. Type it again over the top.`};}
+function wrongSel(field,should){S.mistakes++;S.fb={c:'bad',t:`Wrong ${field} – your paperwork says ${should}. Press L1 on this page to choose again.`};}
+// ---------- key handling
+function key(k){if(!S||S.tEnd)return;if(!S.t0)S.t0=Date.now();S.fb=null;
+  if(/^[A-Z0-9]$/.test(k)||k==='/'||k==='.'||k==='SP'||k==='+/-'){if(S.spMsg){S.sp='';S.spMsg=false;}if(S.sp==='CLR')S.sp='';const ch=k==='SP'?' ':k==='+/-'?(S.sp.endsWith('-')?'+':'-'):k;if(S.sp.length<22)S.sp+=ch;return after();}
+  if(k==='CLR'){if(S.spMsg){S.sp='';S.spMsg=false;S.clearedMsg=true;}else if(S.sp==='CLR'){S.sp='';}else if(S.sp)S.sp=S.sp.slice(0,-1);else S.sp='CLR';return after();}
+  if(k==='OVFY'){msg('NOT IN TRAINER');return after();}
+  const pageKeys={INIT:'INIT',PERF:'PERF','F-PLN':'F-PLN',RAD:'RAD'};
+  if(pageKeys[k]){if(k==='PERF'&&S.drill==='pre')S.perf.ph='TO';if(k==='PERF'&&S.drill==='appr'&&S.perf.ph==='TO')S.perf.ph='CRZ';
+    S.page=pageKeys[k];if(k==='RAD')S.radSeen=true;if(k==='F-PLN')S.f.top=0;return after();}
+  if(['DIR','PROG','DATA','FUEL','SEC','ATC','MENU','AIRPORT','BRT','DIM'].includes(k)){msg(k==='FUEL'&&S.drill==='pre'?'NOT ALLOWED':'NOT IN TRAINER',k==='FUEL');return after();}
+  if(k==='NEXT'||k==='PREV'){if(S.page==='INIT'&&k==='NEXT')S.page='INITB';else if(S.page==='INITB'&&k==='PREV')S.page='INIT';else if(S.page==='INITB'&&k==='NEXT')S.page='INIT';else if(S.page==='INIT'&&k==='PREV')S.page='INITB';return after();}
+  if(k==='UP'||k==='DOWN'){if(S.page==='F-PLN'){const n=S.f.legs.filter(l=>l.t!=='dest').length;S.f.top=Math.max(0,Math.min(n-1,S.f.top+(k==='UP'?1:-1)));}return after();}
+  if(/^[LR][1-6]$/.test(k))lsk(k);after();}
+function lsk(k){const s=S,p=s.page,sp=s.sp&&!s.spMsg?s.sp.trim():'',side=k[0],n=+k[1];
+  const take=()=>{s.sp='';};
+  if(p==='INIT'){if(k==='R2'&&s.init.st==='empty'){s.init.st='loading';setTimeout(()=>{if(S===s){s.init.st='loaded';loadRoute(s);s.wind.st=s.wind.st;paint();}},1100);return;}
+    if(k==='R3'){s.page='IRS';s.irsSeen=true;return;}if(k==='R4'){s.page='WIND';return;}
+    if(k==='L5'&&sp){if(/^\d{1,3}$/.test(sp)){take();OFP.ci===sp||wrong('Cost index',OFP.ci);}else msg('FORMAT ERROR',true);return;}
+    if(k==='R1'&&sp){msg('USE INIT REQUEST',false);return;}
+    if(sp)msg('NOT ALLOWED',true);return;}
+  if(p==='IRS'||p==='WIND'){if(k==='L6'){s.page='INIT';return;}if(p==='WIND'&&k==='R4'&&s.wind.st==='empty'){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.wind.st='loading';setTimeout(()=>{if(S===s){s.wind.st='loaded';paint();}},900);return;}
+    if(p==='WIND'&&k==='R6'){msg('NOT IN TRAINER');return;}return;}
+  if(p==='INITB'){if(k==='R1'){if(!sp){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.b.zfw=OFP.zfw;s.b.cg=OFP.cg;return;}
+      const m=sp.match(/^(\d{1,3}(\.\d)?)\/(\d{1,2}(\.\d)?)$/);if(!m){msg('FORMAT ERROR',true);return;}take();s.b.zfw=(+m[1]).toFixed(1);s.b.cg=(+m[3]).toFixed(1);if(s.b.zfw!==OFP.zfw||s.b.cg!==OFP.cg)wrong('ZFW/ZFWCG',OFP.zfw+'/'+OFP.cg);return;}
+    if(k==='R3'){if(s.b.plan==='none'){if(!s.b.zfw){msg('ENTER ZFW/ZFWCG FIRST',true);return;}s.b.plan='computing';setTimeout(()=>{if(S===s){s.b.plan='planned';paint();}},1500);return;}
+      if(s.b.plan==='planned'){s.b.plan='confirmed';return;}return;}
+    if(k==='R2'&&sp){if(/^\d{1,2}(\.\d)?$/.test(sp)){take();msg('USE FUEL PLANNING',false);}else msg('FORMAT ERROR',true);return;}
+    if(sp)msg('NOT ALLOWED',true);return;}
+  if(p==='F-PLN'){const legs=s.f.legs.filter(l=>l.t!=='dest');
+    if(side==='L'&&n<=5){const l=legs[s.f.top+n-1];if(!l)return;
+      if(s.sp==='CLR'){if(l.t==='disc'||l.dup){s.f.legs.splice(s.f.legs.indexOf(l),1);s.sp='';s.fb={c:'ok',t:l.t==='disc'?'Discontinuity cleared.':'Duplicate UTAVA removed.'};}else msg('NOT ALLOWED',true);return;}
+      if(l.t==='disc'){msg('NOT ALLOWED',true);return;}
+      if(sp){msg('NOT IN TRAINER');return;}
+      s.latrev=l;s.page='LATREV';return;}
+    if(k==='L6'){if(s.sp==='CLR'){msg('NOT ALLOWED',true);return;}s.latrev=s.f.legs.find(l=>l.t==='dest');s.page='LATREV';return;}
+    if(side==='R'){if(sp){msg('NOT IN TRAINER');return;}return;}return;}
+  if(p==='LATREV'){const l=s.latrev;if(k==='L1'&&l.t==='orig'){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.page='DEP';s.dep.stage=s.dep.rwy?'sid':'rwy';return;}
+    if(k==='R1'&&l.t==='dest'){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.page='ARR';s.arr.stage=s.arr.appr?'star':'appr';return;}
+    if(k==='L6'){s.page='F-PLN';return;}msg('NOT IN TRAINER');return;}
+  if(p==='DEP'){if(k==='L6'){s.page='F-PLN';return;}
+    if(k==='R6'&&s.dep.rwy&&s.dep.sid){if(s.dep.done){s.page='F-PLN';return;}insertDep(s,s.dep.rwy,s.dep.sid);s.page='F-PLN';s.f.top=0;s.fb={c:'ok',t:'Departure inserted. Look for the discontinuity it created.'};return;}
+    if(side==='L'&&n>=2&&n<=5){const i=n-2;if(s.dep.stage==='rwy'){const r=['04','22'][i];if(!r)return;s.dep.rwy=r;s.dep.stage='sid';if(r!==OFP.rwy)wrongSel('runway',OFP.rwy);return;}
+      const sd=['UTAV1R','LAMS2R','BUZA1R','CPT1R'][i];if(!sd)return;s.dep.sid=sd;if(sd!==OFP.sid){wrongSel('SID',OFP.sid);}return;}
+    if(k==='L1'){s.dep.stage='rwy';s.dep.rwy='';s.dep.sid='';return;}return;}
+  if(p==='ARR'){if(k==='L6'){s.page='F-PLN';return;}
+    if(k==='R6'&&s.arr.appr&&s.arr.star){if(!s.arr.done)insertArr(s);s.page='F-PLN';s.fb={c:'ok',t:'Arrival inserted – scroll down and check for a discontinuity.'};return;}
+    if(side==='L'&&n>=2&&n<=4){const i=n-2;if(s.arr.stage==='appr'){const a=['ILS24','ILS06','RNV24'][i];s.arr.appr=a;s.arr.stage='star';if(a!==OFP.appr)wrongSel('approach',OFP.appr);return;}
+      const st=['INPI1E','TLA6E','GRICE1E'][i];s.arr.star=st;if(st!==OFP.star)wrongSel('STAR',OFP.star);return;}
+    if(k==='L1'){s.arr.stage='appr';s.arr.appr='';s.arr.star='';return;}return;}
+  if(p==='PERF'){const P=s.perf;
+    if(k==='R6'){if(P.ph==='TO'&&P.upPending){P.upPending=false;P.toConfirmed=true;s.fb={c:'ok',t:'Takeoff data confirmed.'};return;}const order=['TO','CLB','CRZ','DES','APPR'];const i=order.indexOf(P.ph);if(i<order.length-1&&!(P.ph==='TO'&&S.drill==='pre'&&false))P.ph=order[i+1];return;}
+    if(k==='L6'&&P.ph!=='TO'){const order=['TO','CLB','CRZ','DES','APPR'];const i=order.indexOf(P.ph);if(i>(S.drill==='appr'?2:0))P.ph=order[i-1];return;}
+    if(P.ph==='TO'){const sp3=v=>/^\d{3}$/.test(v)&&+v>=90&&+v<=180;
+      if(['L1','L2','L3'].includes(k)){if(!sp){msg('NOT ALLOWED',true);return;}if(!sp3(sp)){msg(/^\d+$/.test(sp)?'ENTRY OUT OF RANGE':'FORMAT ERROR',true);return;}take();const f={L1:'v1',L2:'vr',L3:'v2'}[k];P[f]=sp;if(!okVal(sp,OFP[f]))wrong(f.toUpperCase(),OFP[f]);return;}
+      if(k==='R3'){if(!sp){msg('NOT ALLOWED',true);return;}const m=sp.match(/^([0-3])\/(UP|DN)(\d{1,2}(\.\d)?)$/);if(!m){msg('FORMAT ERROR',true);return;}take();P.flaps=`${m[1]}/${m[2]}${(+m[3]).toFixed(1)}`;if(P.flaps!==OFP.flaps)wrong('FLAPS/THS',OFP.flaps);return;}
+      if(k==='R4'){if(!sp){msg('NOT ALLOWED',true);return;}if(!/^\d{1,2}$/.test(sp)){msg('FORMAT ERROR',true);return;}take();P.flex=sp;if(!okVal(sp,OFP.flex))wrong('FLEX TO TEMP',OFP.flex);return;}
+      if(k==='L4'||k==='L5'){if(sp){msg('NOT IN TRAINER');}return;}
+      if(sp)msg('NOT ALLOWED',true);return;}
+    if(P.ph==='APPR'){
+      if(k==='L1'){if(!/^\d{3,4}$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.qnh=sp;if(!okVal(sp,OFP.qnh))wrong('QNH',OFP.qnh+' (the Q number in the METAR)');return;}
+      if(k==='L2'){if(!/^-?\d{1,2}$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.temp=String(+sp);if(!okVal(P.temp,OFP.temp))wrong('TEMP',OFP.temp);return;}
+      if(k==='L3'){const m=sp.match(/^(\d{1,3})\/(\d{1,3})$/);if(!m){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.wind=m[1].padStart(3,'0')+'/'+m[2].padStart(2,'0');if(P.wind!=='210/05')wrong('MAG WIND','210/05');return;}
+      if(k==='R2'){if(!/^\d{2,4}$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.baro=sp;P.radio='';S.mistakes++;S.fb={c:'bad',t:'This is a CAT III approach – use RADIO 50, not BARO. Your BARO entry wiped the RADIO value.'};return;}
+      if(k==='R3'){if(!/^(\d{1,4}|NO)$/.test(sp)){msg(sp?'FORMAT ERROR':'NOT ALLOWED',true);return;}take();P.radio=sp;P.baro='';if(!okVal(sp,OFP.radio))wrong('RADIO',OFP.radio);return;}
+      if(k==='R4'){P.conf='3';P.confTouched=true;S.mistakes++;S.fb={c:'bad',t:'Your checklist lands with FULL flaps – press R5.'};return;}
+      if(k==='R5'){P.conf='FULL';P.confTouched=true;return;}
+      if(sp)msg('NOT ALLOWED',true);return;}
+    return;}
+  if(p==='RAD'){if(sp)msg('NOT IN TRAINER');return;}
+}
+function after(){adv(false);paint();}
+// ---------- paint
+function hlKeys(){if(mode!=='learn'&&D.reveal!==D.i)return [];const st=cur(),m=mp(st);return m&&m.keys?m.keys(S):[];}
+function K(id,label,cls=''){return `<button type="button" class="mk ${cls}${hl.includes(id)?' hlk':''}" data-k="${id}">${label}</button>`;}
+let hl=[];
+function device(){hl=hlKeys();const g=pg(S);const lsk=side=>[1,2,3,4,5,6].map(i=>`<b data-k="${side}${i}" class="${hl.includes(side+i)?'hlk':''}" role="button" aria-label="${side==='L'?'Left':'Right'} key ${i}"></b>`).join('');
+  return `<div class="mcdu"><div class="mc-scrwrap"><div class="lsk">${lsk('L')}</div><div class="mscr">${scrHTML(g)}</div><div class="lsk">${lsk('R')}</div></div>
+  <div class="mkeys">
+   <div class="krow" style="grid-template-columns:repeat(6,1fr)">${K('DIR','DIR')}${K('PROG','PROG')}${K('PERF','PERF')}${K('INIT','INIT')}${K('DATA','DATA')}${K('BRT','BRT')}</div>
+   <div class="krow" style="grid-template-columns:repeat(6,1fr)">${K('F-PLN','F-PLN')}${K('RAD','RAD<br>NAV')}${K('FUEL','FUEL<br>PRED')}${K('SEC','SEC<br>F-PLN')}${K('ATC','ATC<br>COMM')}${K('MENU','MCDU<br>MENU')}</div>
+   <div class="krow" style="grid-template-columns:repeat(6,1fr)">${K('AIRPORT','AIR<br>PORT')}<span></span>${K('PREV','←','big')}${K('UP','↑','big')}${K('NEXT','→','big')}${K('DOWN','↓','big')}</div>
+   <div class="kpads"><div class="num">${['1','2','3','4','5','6','7','8','9','.','0','+/-'].map(x=>K(x,x,'big')).join('')}</div>
+     <div class="alpha">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(x=>K(x,x,'big')).join('')}${K('SP','SP')}${K('/','/','big')}${K('OVFY','OVFY')}${K('CLR','CLR')}</div></div>
+  </div></div>`;}
+function paper(){return `<div class="tcard paper"><div class="k">Your paperwork (practice numbers)</div><div>
+  <div class="h">SimBrief OFP</div>${OFP.flt} · ${OFP.from} → ${OFP.to}<br>CI <b>${OFP.ci}</b> · CRZ <b>${OFP.crz}</b><br>DEP RWY <b>${OFP.rwy}</b> SID <b>${OFP.sid}</b><br>ARR <b>${OFP.appr}</b> STAR <b>${OFP.star}</b><br>ZFW/CG <b>${OFP.zfw}/${OFP.cg}</b> · BLOCK <b>${OFP.block}</b>
+  <div class="h">EFB takeoff calculation</div>V1 <b>${OFP.v1}</b> VR <b>${OFP.vr}</b> V2 <b>${OFP.v2}</b><br>FLAPS/THS <b>${OFP.flaps}</b> · FLEX <b>${OFP.flex}</b>
+  <div class="h">Edinburgh weather & chart</div><span class="metar">EGPH 051350Z 21005KT 9999 BKN012 08/06 Q0998</span>ILS 24 <b>${OFP.ils}</b> CRS <b>${OFP.crs}</b> · CAT III DH <b>${OFP.radio}</b></div></div>`;}
+function scaleIt(){const st=$('mcStage');if(!st)return;const inner=st.firstElementChild;const k=Math.min(st.clientWidth/inner.scrollWidth,st.clientHeight/inner.scrollHeight,1.4);inner.style.transform=`translateX(-50%) scale(${k})`;}
+function paint(){if(!D){return;}const st=cur(),m=mp(st);$('mcTitle').textContent='MCDU trainer · '+DRILLS[D.d].t;
+  [...$('mcMode').children].forEach(b=>b.classList.toggle('on',b.dataset.mm===mode));
+  const secs=S.t0?Math.round(((S.tEnd||Date.now())-S.t0)/1000):0;
+  $('mcStat').innerHTML=`<span>Step <b>${Math.min(D.i+1,D.steps.length)}</b>/${D.steps.length}</span><span>Time <b>${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}</b></span><span class="${S.mistakes?'bad':''}">Mistakes <b class="${S.mistakes?'bad':''}">${S.mistakes}</b></span>`;
+  let right='';
+  if(S.tEnd){const t=(S.tEnd-S.t0)/1000,b=best[D.d+'-'+mode];right=`<div class="done-card"><h3>Drill complete</h3><div class="big">Time ${Math.floor(t/60)}:${String(Math.round(t%60)).padStart(2,'0')}<br>Mistakes ${S.mistakes}</div>${D.newBest?'<div style="color:var(--green);font-weight:600">New personal best</div>':''}${b?`<div style="font-size:13px;color:var(--muted)">Best (${mode}): ${Math.floor(b.t/60)}:${String(Math.round(b.t%60)).padStart(2,'0')}, ${b.m} mistakes</div>`:''}<button type="button" class="tbtn" id="mcAgain">Run it again</button>${mode==='learn'?'<button type="button" class="tbtn alt" id="mcToTest">Try it in Test mode</button>':''}<button type="button" class="tbtn alt" id="mcPick">Choose another drill</button></div>`;}
+  else if(st){const onMcdu=!!m,show=mode==='learn'||D.reveal===D.i||!onMcdu;
+    right=`<div class="tcard"><div class="k">${esc(st.phase)}</div>${show?`<h3 class="it">${esc(st.i)}</h3>${st.a?`<div class="ac">${esc(st.a)}</div>`:''}${onMcdu&&(mode==='learn'||D.reveal===D.i)?`<div class="nt">${esc(m.hint)}</div>`:st.n?`<div class="nt">${noteHTML(st.n,st.t)}</div>`:''}`:`<h3 class="it">Step ${D.i+1}: what's next?</h3><div class="where">Do the next MCDU step from memory, using your paperwork.</div><button type="button" class="tbtn alt" id="mcReveal">Show me (counts as a hint)</button>`}
+     ${onMcdu?'':`<div class="where">Not done on the MCDU – tap when you've done it.</div><button type="button" class="tbtn" id="mcDone">Done it ✓</button>`}</div>`;}
+  if(S.fb)right+=`<div class="tfb ${S.fb.c}">${esc(S.fb.t)}</div>`;
+  right+=paper();
+  right+=`<div class="tcard"><div class="k">This drill</div><div class="tlist">${D.steps.map((x,j)=>`<span class="${j<D.i?'d':j===D.i?'c':''}"><span>${j+1}. ${esc(x.i)}</span><span>${j<D.i?'✓':j===D.i?'→':''}</span></span>`).join('')}</div></div>`;
+  $('mcMain').innerHTML=`<div class="tr-body"><div class="tr-left"><div class="stage" id="mcStage"><div class="stage-inner">${device()}</div></div></div><div class="tr-right">${right}</div></div>`;
+  scaleIt();const cl=$('mcMain').querySelector('.tlist .c'),tl=$('mcMain').querySelector('.tlist');if(cl&&tl)tl.scrollTop=Math.max(0,cl.offsetTop-tl.offsetTop-60);}
+function pick(){D=null;S=null;$('mcTitle').textContent='MCDU trainer';$('mcStat').innerHTML='';
+  const fmt=k=>{const b=best[k];return b?`${Math.floor(b.t/60)}:${String(Math.round(b.t%60)).padStart(2,'0')}, ${b.m} mistakes`:'not yet run';};
+  $('mcMain').innerHTML=`<div style="overflow:auto"><div class="drillpick">${Object.entries(DRILLS).map(([k,d])=>`<button type="button" data-mdrill="${k}"><b>${d.t}</b><span>${d.d}</span><span style="font-size:12.5px">${stepsOf(k).length} steps · Best learn: ${fmt(k+'-learn')} · Best test: ${fmt(k+'-test')}</span></button>`).join('')}
+   <div style="grid-column:1 / -1;color:var(--muted);font-size:14px;line-height:1.5"><b style="color:var(--text)">How it works.</b> Use the MCDU like the real one: type into the scratchpad (bottom line) with the keypad, then press the side key next to the field. Page keys (INIT, F-PLN, PERF, RAD NAV) and the arrow keys move between pages. The numbers to enter are on the paperwork card. <b style="color:var(--text)">Learn</b> highlights the key to press next; <b style="color:var(--text)">Test</b> hides the hints and counts format errors and wrong values as mistakes. Practice flight: Stansted → Edinburgh, as in Jon Beckett's video, with made-up numbers.</div></div></div>`;}
+document.addEventListener('click',e=>{if(!e.target.closest('.mc'))return;const b=e.target.closest('button,[data-k]');if(!b)return;
+  if(b.dataset.k){key(b.dataset.k);return;}
+  if(b.dataset.mdrill){start(b.dataset.mdrill);return;}
+  if(b.dataset.mm){mode=b.dataset.mm;if(D)start(D.d);else[...$('mcMode').children].forEach(x=>x.classList.toggle('on',x.dataset.mm===mode));return;}
+  switch(b.id){case 'mcExit':closeM();break;case 'mcRestart':D?start(D.d):pick();break;case 'mcAgain':start(D.d);break;case 'mcToTest':mode='test';start(D.d);break;case 'mcPick':pick();break;
+    case 'mcReveal':S.hints++;D.reveal=D.i;paint();break;case 'mcDone':if(!S.t0)S.t0=Date.now();D.i++;adv(false);paint();break;}});
+document.addEventListener('keydown',e=>{if(!$('mc').classList.contains('show')||!S)return;if(e.key==='Escape'){closeM();return;}
+  const k=e.key.toUpperCase();if(/^[A-Z0-9]$/.test(k)||k==='/'||k==='.'){key(k);e.preventDefault();}else if(e.key==='Backspace'){key('CLR');e.preventDefault();}else if(e.key===' '){key('SP');e.preventDefault();}});
+setInterval(()=>{if(S&&S.t0&&!S.tEnd&&$('mc').classList.contains('show')){const el=$('mcStat');if(el){const secs=Math.round((Date.now()-S.t0)/1000);const b=el.querySelectorAll('b')[1];if(b)b.textContent=`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;}}},1000);
+window.addEventListener('resize',scaleIt);
+function openM(){$('mc').classList.add('show');document.querySelector('.app').style.visibility='hidden';pick();}
+function closeM(){$('mc').classList.remove('show');document.querySelector('.app').style.visibility='';}
+window.openMcdu=openM;window.__mcdu=()=>({S,D});
 })();
 </script>
 
