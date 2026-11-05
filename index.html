@@ -576,6 +576,10 @@ if(st.view==='list'){const el=document.getElementById('ph-'+st.p);if(el)el.scrol
 .knob .kp{position:absolute;font:600 8.5px/1 var(--display);color:#c9d3dc;padding:2px 3px;border-radius:3px;white-space:nowrap}
 .knob .kp.on{color:#fff;background:rgba(0,0,0,.25)}
 /* flow lines */
+.win{min-width:66px;height:26px;padding:0 6px;background:#0b0e11;border:2px solid #262c33;border-radius:3px;font:700 15px/22px var(--mono);color:#ffb52e;text-shadow:0 0 6px rgba(255,170,40,.6);text-align:center;position:relative;letter-spacing:1px}
+.win i{position:absolute;right:3px;top:-1px;font-style:normal;font-size:10px;color:#ffb52e}
+.pb.sb{width:38px;height:24px;grid-template-rows:1fr;font-size:10px;color:#e9eef3;display:flex;align-items:center;justify-content:center}
+.sv{font:600 9px var(--mono)}.sv.w{fill:#fff}.sv.g{fill:#36e36f}.sv.c{fill:#3fc8ff}.sv.m{fill:#e070f0}
 .flow{height:2px;background:#d9e2ea;opacity:.75;margin:5px 10px}
 .amb{width:44px;height:16px;background:#0d1014;border:1px solid #000;border-radius:2px;font:700 8.5px/16px var(--mono);text-align:center;color:#2a3036}
 .amb.lt{color:var(--l-amber);text-shadow:0 0 5px var(--l-amber)}
@@ -629,9 +633,11 @@ const ACCEL={apuStart:9000,apuStop:5000,align:14000,engStart:12000,engStop:6000}
 const PANEL={};
 const OVH='Overhead',GLR='Glareshield & main',PED='Pedestal',MCD='MCDU';
 ['adirs1','adirs2','adirs3','fireApu','fireE1','fireE2','yPump','fL1','fL2','fCL','fCR','fR1','fR2','bat1','bat2','ext','apuBleed','antiWing','antiE1','antiE2','oxy','cvr','strobe','beacon','wing','nav','rwy','land','nose','apuMaster','apuStart','belts','smoke','emer'].forEach(k=>PANEL[k]=OVH);
-['fd1','fd2','ls1','ls2','cstr','athr','ap1','ap2','abLO','abMED','abMAX','sdENG','sdAPU','sdDOOR','sts'].forEach(k=>PANEL[k]=GLR);
+['fd1','fd2','ls1','ls2','cstr','cstr2','wpt1','arpt1','arpt2','athr','ap1','ap2','loc','appr','exped','abLO','abMED','abMAX','sdENG','sdAPU','sdDOOR','sts','terr1','baro1-','baro1+','std1','baro2-','baro2+','std2','ndMode1','ndRange1','ndMode2','ndRange2','spd-','spd+','spdPush','spdPull','hdg-','hdg+','hdgPush','hdgPull','alt-','alt+','altPush','altPull','altStep','vs-','vs+','vsPush','vsPull'].forEach(k=>PANEL[k]=GLR);
+['wx','pws'].forEach(k=>PANEL[k]=PED);
 ['m1','m2','mode','flaps','spd','park','xpdr','tcas'].forEach(k=>PANEL[k]=PED);
 const NAMES={adirs1:'IR 1',adirs2:'IR 2',adirs3:'IR 3',fireApu:'APU FIRE TEST',fireE1:'ENG 1 FIRE TEST',fireE2:'ENG 2 FIRE TEST',yPump:'Yellow ELEC PUMP',fL1:'Fuel L1',fL2:'Fuel L2',fCL:'Fuel CTR L',fCR:'Fuel CTR R',fR1:'Fuel R1',fR2:'Fuel R2',bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuBleed:'APU BLEED',antiWing:'WING anti-ice',antiE1:'ENG 1 anti-ice',antiE2:'ENG 2 anti-ice',oxy:'CREW SUPPLY',cvr:'RCDR GND CTL',strobe:'STROBE',beacon:'BEACON',wing:'WING lights',nav:'NAV & LOGO',rwy:'RWY TURN OFF',land:'LAND lights',nose:'NOSE light',apuMaster:'APU MASTER SW',apuStart:'APU START',belts:'SEAT BELTS',smoke:'NO SMOKING',emer:'EMER EXIT LT',fd1:'FD (Capt)',fd2:'FD (F/O)',ls1:'LS (Capt)',ls2:'LS (F/O)',cstr:'CSTR',athr:'A/THR',ap1:'AP 1',ap2:'AP 2',abLO:'AUTO BRK LO',abMED:'AUTO BRK MED',abMAX:'AUTO BRK MAX',m1:'ENG MASTER 1',m2:'ENG MASTER 2',mode:'ENG MODE',flaps:'FLAPS lever',spd:'SPEED BRAKE lever',park:'PARKING BRK',xpdr:'XPDR',tcas:'TCAS',sdENG:'ECAM ENG page',sdAPU:'ECAM APU page',sdDOOR:'ECAM DOOR page',sts:'ECAM STS'};
+Object.assign(NAMES,{cstr2:'CSTR (F/O)',wpt1:'WPT',arpt1:'ARPT',arpt2:'ARPT (F/O)',loc:'LOC',appr:'APPR',exped:'EXPED',terr1:'TERR ON ND','baro1-':'Capt baro knob','baro1+':'Capt baro knob',std1:'Capt baro STD','baro2-':'F/O baro knob','baro2+':'F/O baro knob',std2:'F/O baro STD',ndMode1:'ND MODE (Capt)',ndRange1:'ND RANGE (Capt)',ndMode2:'ND MODE (F/O)',ndRange2:'ND RANGE (F/O)','spd-':'SPD knob','spd+':'SPD knob',spdPush:'SPD knob',spdPull:'SPD knob','hdg-':'HDG knob','hdg+':'HDG knob',hdgPush:'HDG knob',hdgPull:'HDG knob','alt-':'ALT knob','alt+':'ALT knob',altPush:'ALT knob',altPull:'ALT knob',altStep:'ALT 100/1000 switch','vs-':'V/S knob','vs+':'V/S knob',vsPush:'V/S knob',vsPull:'V/S knob',wx:'Weather radar',pws:'PWS'});
 const FUEL=['fL1','fL2','fCL','fCR','fR1','fR2'];
 const apuAvail=s=>s.apu.st==='avail';
 const run=(s,i)=>s.eng[i].st==='running';
@@ -651,7 +657,15 @@ const M={
  'S02-09':{c:['adirs1','adirs2','adirs3'],ok:adirsNav},
  'S02-10':{c:['cvr'],ok:s=>s.cvr},
  'S02-11':{c:['fireApu','fireE1','fireE2'],ok:s=>s.tested.apu&&s.tested.e1&&s.tested.e2},
+ 'S05-00':{c:['baro1-','baro1+','std1','baro2-','baro2+','std2'],ok:s=>s.baro1===1002&&s.baro2===1002&&!s.std1&&!s.std2,info:'Stansted METAR: EGSS 051320Z 23011KT 9999 SCT025 10/06 Q1002 – set 1002 on BOTH baro knobs (they are not linked).'},
  'S05-01':{c:['fd1','fd2'],ok:s=>s.fd1&&s.fd2},
+ 'S05-02':{c:['alt-','alt+','altStep','altPush','altPull'],ok:s=>s.alt===34000,info:'No ATC today – set the cruise level, 34000. Flip the switch to 1000 and hold + to spin it up quickly.'},
+ 'S05-06':{c:['ndMode1','ndRange1'],ok:s=>s.ndMode1==='ARC'&&s.ndRange1===10},
+ 'S04-09':{c:['ndMode1'],ok:s=>s.ndMode1==='PLAN',info:'Turn the Capt ND MODE knob to PLAN to see the whole route drawn on the ND.'},
+ 'S08-05':{c:['wx','pws'],ok:s=>s.wx==='SYS 1'&&s.pws==='AUTO'},
+ 'S08-08':{c:['terr1'],ok:s=>s.terr1},
+ 'S18-06':{c:['wx','pws'],ok:s=>s.wx==='OFF'&&s.pws==='OFF'},
+ 'S18-07':{c:['ndMode1'],ok:s=>s.ndMode1==='ARC'||s.ndMode1==='NAV'},
  'S05-03':{c:[],ok:s=>!s.athr,dont:'athr'},
  'S05-04':{c:['cstr'],ok:s=>s.cstr},
  'S05-05':{c:['ls1','ls2'],ok:s=>!s.ls1&&!s.ls2},
@@ -712,12 +726,13 @@ function mcduSteps(){if(!window.MCDU)return;Object.keys(window.MCDU.M).forEach(i
 function coldDark(){return{bat1:false,bat2:false,ext:false,gpu:true,apuMaster:false,apu:{st:'off',n:0,t:0},adirs:['OFF','OFF','OFF'],align:[0,0,0],oxy:false,cvr:false,
   tested:{apu:false,e1:false,e2:false},testing:null,fL1:false,fL2:false,fCL:false,fCR:false,fR1:false,fR2:false,apuBleed:false,antiWing:false,antiE1:false,antiE2:false,yPump:false,
   strobe:'OFF',beacon:'OFF',wing:'OFF',nav:'OFF',rwy:'OFF',land:'RETRACT',nose:'OFF',belts:'OFF',smoke:'OFF',emer:'OFF',
-  fd1:false,fd2:false,ls1:false,ls2:false,cstr:false,athr:false,ap1:false,ap2:false,ab:'',
+  fd1:false,fd2:false,ls1:false,ls2:false,cstr:false,cstr2:false,wpt1:false,arpt1:false,arpt2:false,athr:false,ap1:false,ap2:false,loc:false,appr:false,exped:false,ab:'',terr1:false,
+  baro1:1013,baro2:1013,std1:false,std2:false,ndMode1:'NAV',ndRange1:40,ndMode2:'NAV',ndRange2:40,spd:100,spdMan:false,hdg:360,hdgMan:false,alt:100,altMan:false,altStep:1000,vs:0,vsMan:true,wx:'OFF',pws:'OFF',
   m1:false,m2:false,mode:'NORM',flaps:'0',spd:'RET',park:'ON',xpdr:'STBY',tcas:'STBY',
   eng:[{st:'off',n2:0,t:0,fault:''},{st:'off',n2:0,t:0,fault:''}],sd:null,sdAuto:true};}
 function afterLanding(){const s=coldDark();Object.assign(s,{bat1:true,bat2:true,gpu:false,adirs:['NAV','NAV','NAV'],align:[1,1,1],oxy:true,cvr:true,
   fL1:true,fL2:true,fCL:true,fCR:true,fR1:true,fR2:true,strobe:'ON',beacon:'ON',nav:'2',rwy:'ON',land:'ON',nose:'T.O.',belts:'ON',smoke:'AUTO',emer:'ARM',
-  fd1:true,fd2:true,ls1:true,ls2:true,ab:'LO',m1:true,m2:true,flaps:'FULL',spd:'ARM',park:'OFF',xpdr:'AUTO',tcas:'TA/RA'});
+  fd1:true,fd2:true,ls1:true,ls2:true,ab:'LO',baro1:998,baro2:998,ndMode1:'LS',ndRange1:10,ndMode2:'LS',ndRange2:10,wx:'SYS 1',pws:'AUTO',terr1:true,alt:3000,spdMan:true,hdgMan:true,altMan:true,m1:true,m2:true,flaps:'FULL',spd:'ARM',park:'OFF',xpdr:'AUTO',tcas:'TA/RA'});
   s.eng=[{st:'running',n2:100,t:0,fault:''},{st:'running',n2:100,t:0,fault:''}];return s;}
 let T=null, T0mode='learn'; // session
 const el=id=>document.getElementById(id);
@@ -765,9 +780,20 @@ setInterval(tick,150);
 function act(id,v){if(!T||T.tEnd)return;T.hold=null;const s=T.s,dc=s.bat1||s.bat2;if(!T.t0)T.t0=Date.now();
   const st=cur(),m=mapOf(st);
   const before=JSON.stringify(stateKey(id));
-  switch(id){
+  const pm=id.match(/^(baro1|baro2|spd|hdg|alt|vs)([+-])$/),pp=id.match(/^(spd|hdg|alt|vs)(Push|Pull)$/);
+  if(pm){const k=pm[1],d=pm[2]==='+'?1:-1;if(k.startsWith('baro')){if(s['std'+k.slice(-1)]){T.fb={c:'info',t:'Baro is on STD – press PULL STD to go back to QNH first.'};paint();return;}s[k]=Math.max(945,Math.min(1050,s[k]+d));}
+    else if(k==='spd'){if(s.spdMan){T.fb={c:'info',t:'Speed is managed (dot). Pull the knob first to select a speed.'};paint();return;}s.spd=Math.max(100,Math.min(399,s.spd+d));}
+    else if(k==='hdg'){s.hdgMan=false;s.hdg=((s.hdg-1+d+360)%360)+1;}
+    else if(k==='alt'){s.alt=Math.max(100,Math.min(49000,s.altStep===1000?Math.round((s.alt+d*1000)/1000)*1000||100:s.alt+d*100));}
+    else if(k==='vs'){s.vsMan=false;s.vs=Math.max(-6000,Math.min(6000,s.vs+d*100));}
+    id=k==='baro1'?'baro1+':k==='baro2'?'baro2+':id;}
+  else if(pp){s[pp[1]+'Man']=pp[2]==='Push';if(pp[1]==='vs'&&pp[2]==='Pull')s.vsMan=false;}
+  else switch(id){
+    case 'std1':case 'std2':case 'cstr2':case 'wpt1':case 'arpt1':case 'arpt2':case 'loc':case 'appr':case 'exped':case 'terr1': s[id]=!s[id];break;
+    case 'ndRange1':case 'ndRange2': s[id]=+v;break;
+    case 'altStep': s.altStep=+v;break;
     case 'bat1':case 'bat2':case 'oxy':case 'cvr':case 'apuBleed':case 'antiWing':case 'antiE1':case 'antiE2':case 'yPump':case 'fd1':case 'fd2':case 'ls1':case 'ls2':case 'cstr':case 'athr':case 'ap1':case 'ap2':case 'm1':case 'm2':
-    case 'fL1':case 'fL2':case 'fCL':case 'fCR':case 'fR1':case 'fR2': s[id]=!s[id];break;
+    case 'fL1':case 'fL2':case 'fCL':case 'fCR':case 'fR1':case 'fR2': s[id]=!s[id];if((id==='fd1'||id==='fd2')&&s[id]&&T.mc&&T.mc.init.st==='loaded'){s.spdMan=true;s.hdgMan=true;}break;
     case 'ext': if(s.ext)s.ext=false; else if(s.gpu&&dc)s.ext=true; else {T.fb={c:'info',t:s.gpu?'EXT PWR needs the batteries on first.':'No ground power connected – the AVAIL light is out.'};paint();return;} break;
     case 'apuMaster': s.apuMaster=!s.apuMaster;break;
     case 'apuStart': if(!dc){T.fb={c:'info',t:'No power – switch the batteries on first.'};paint();return;} if(!s.apuMaster){T.fb={c:'info',t:'APU START does nothing until the APU MASTER SW is ON.'};paint();return;} if(s.apu.st==='off'){s.apu.st='starting';s.apu.t=0;} break;
@@ -781,7 +807,7 @@ function act(id,v){if(!T||T.tEnd)return;T.hold=null;const s=T.s,dc=s.bat1||s.bat
   const changed=JSON.stringify(stateKey(id))!==before;
   if(!changed){paint();return;}
   judge(id);paint(true);}
-function stateKey(id){const s=T.s;if(id.startsWith('adirs'))return s.adirs[+id.slice(-1)-1];if(id.startsWith('ab'))return s.ab;if(id.startsWith('fire'))return JSON.stringify(s.tested)+(s.testing?1:0);if(id==='apuStart')return s.apu.st;if(id.startsWith('sd')||id==='sts')return s.sd;return s[id];}
+function stateKey(id){const s=T.s;{const m=id.match(/^(baro1|baro2|spd|hdg|alt|vs)([+-])$/);if(m)return s[m[1]]+'|'+s[m[1]+'Man'];const q=id.match(/^(spd|hdg|alt|vs)(Push|Pull)$/);if(q)return s[q[1]+'Man'];}if(id.startsWith('adirs'))return s.adirs[+id.slice(-1)-1];if(id.startsWith('ab'))return s.ab;if(id.startsWith('fire'))return JSON.stringify(s.tested)+(s.testing?1:0);if(id==='apuStart')return s.apu.st;if(id.startsWith('sd')||id==='sts')return s.sd;return s[id];}
 function judge(id){const st=cur();if(!st)return;const m=mapOf(st);
   if(m&&m.ok&&m.ok(T.s)&&(m.c||[]).includes(id)){complete(`✓ ${st.i} – correct`);return;}
   if(m&&(m.c||[]).includes(id)){T.fb={c:'info',t:'Good – keep going with this step.'};return;}
@@ -790,10 +816,10 @@ function judge(id){const st=cur();if(!st)return;const m=mapOf(st);
   // later step?
   const later=T.steps.findIndex((x,j)=>j>T.i&&controlsOf(x).includes(id));
   const earlier=T.done.some(j=>controlsOf(T.steps[j]).includes(id));
+  if(later<0&&!earlier){T.fb={c:'info',t:`${NAMES[id]||id} – not needed for this step.`};return;}
   T.mistakes++;
   if(later>=0)T.fb={c:'bad',t:`Out of order: ${NAMES[id]} is step ${later+1} (${T.steps[later].i}). Now: ${T.mode==='learn'?st.i:'think about what comes next'}.`};
   else if(earlier)T.fb={c:'bad',t:`That changes ${NAMES[id]}, which you already set. Put it back.`};
-  else T.fb={c:'bad',t:`${NAMES[id]} isn't part of this drill.`};
 }
 // ---- drawing helpers
 const S=()=>T.s;const pwr=()=>S().bat1||S().bat2;
@@ -833,21 +859,73 @@ function overhead(){const s=S(),p=pwr();const testing=k=>s.testing&&s.testing.id
     ${plate('APU',`<div class="prow" style="flex-direction:column;align-items:center;gap:8px">${pb('apuMaster','MASTER SW',['FAULT',null],on(s.apuMaster))}${pb('apuStart','START',['AVAIL',s.apu.st==='avail'?'green':null],on(s.apu.st==='starting'))}</div>`)}
     ${plate('SIGNS',`<div class="prow" style="gap:10px">${sw('belts','SEAT BELTS',['ON','OFF'])}${sw('smoke','NO SMOKING',['ON','AUTO','OFF'])}${sw('emer','EMER EXIT LT',['ON','ARM','OFF'])}</div>`)}
   </div></div>`;}
-function glare(){const s=S(),p=pwr();const g=(id,lab,b)=>pb(id,lab,null,[lab.replace(/ \(.*\)/,''),b&&p?'green':null]);
-  const fcuBtn=(id,lab,b)=>`<div class="ctl${hl(id)}" data-ctl="${id}" role="button">${lab}<div class="pb" style="width:46px;height:30px;grid-template-rows:1fr"><span class="${b&&p?'lt-green':''}" style="font-size:14px">${b?'▬':'▭'}</span></div></div>`;
-  return `<div class="pnl" style="width:840px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(#3a4652,#2b343e)">
-   <div style="display:grid;grid-template-columns:150px 1fr 150px;gap:10px">
-    ${plate('EFIS CAPT',`<div class="prow">${fcuBtn('fd1','FD',s.fd1)}${fcuBtn('ls1','LS',s.ls1)}${fcuBtn('cstr','CSTR',s.cstr)}</div>`)}
-    ${plate('FCU',`<div class="prow" style="gap:12px;align-items:center"><div class="scr" style="min-height:0;padding:4px 10px;border-width:4px;font-size:13px"><span class="x">SPD</span> <span class="${p?'w':'x'}">${p?'---':'   '}</span>  <span class="x">HDG</span> <span class="${p?'w':'x'}">${p?'---':''}</span>  <span class="x">ALT</span> <span class="${p?'w':'x'}">${p?'00100':''}</span></div>${fcuBtn('ap1','AP1',s.ap1)}${fcuBtn('ap2','AP2',s.ap2)}${fcuBtn('athr','A/THR',s.athr)}</div>`)}
-    ${plate('EFIS F/O',`<div class="prow">${fcuBtn('fd2','FD',s.fd2)}${fcuBtn('ls2','LS',s.ls2)}</div>`)}
+function rknob(id,label,pos,val,{w=124,h=92,spread=110,r=44}={}){const i=Math.max(0,pos.indexOf(val));const n=pos.length;const ang=j=>n===1?0:(-spread/2+spread*j/(n-1));
+  const lbl=pos.map((p,j)=>{const a=ang(j)*Math.PI/180;const x=w/2+Math.sin(a)*r,y=56-Math.cos(a)*r;return `<span class="kp${j===i?' on':''}" data-ctl="${id}" data-v="${p}" role="button" style="left:${x}px;top:${y}px;transform:translate(-50%,-50%)">${p}</span>`;}).join('');
+  return `<div class="ctl${hl(id)}" style="cursor:default">${label}<div class="knob" style="width:${w}px;height:${h}px"><div class="cap" style="top:38px;--r:${ang(i)}deg"></div>${lbl}</div></div>`;}
+const smallBtn=(id,t,rep)=>`<div class="ctl${hl(id)}" data-ctl="${id}" ${rep?'data-rep="1"':''} role="button"><div class="pb sb">${t}</div></div>`;
+function fcuBtn(id,lab,b){const p=pwr();return `<div class="ctl${hl(id)}" data-ctl="${id}" role="button">${lab}<div class="pb" style="width:44px;height:28px;grid-template-rows:1fr"><span class="${b&&p?'lt-green':''}" style="font-size:14px">${b?'▬':'▭'}</span></div></div>`;}
+function efis(side){const s=S(),p=pwr(),b=s['baro'+side],std=s['std'+side];
+  const disp=p?(std?'Std':String(b).padStart(4,'0')):'';
+  return plate('EFIS '+(side===1?'CAPT':'F/O'),`
+   <div class="prow" style="gap:8px;align-items:flex-end">
+     <div class="ctl" style="cursor:default">BARO (hPa)<div class="win">${disp}</div><div style="display:flex;gap:4px">${smallBtn('baro'+side+'-','−',1)}${smallBtn('baro'+side+'+','+',1)}</div></div>
+     ${pb('std'+side,'PULL STD',null,['STD',std&&p?'white':null])}
+     ${fcuBtn('fd'+side,'FD',s['fd'+side])}${fcuBtn('ls'+side,'LS',s['ls'+side])}
    </div>
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-     ${ecamUpper(true)}${ecamLower(true)}
-   </div>
-   <div style="display:grid;grid-template-columns:260px 1fr;gap:12px">
+   <div class="prow" style="gap:4px;margin-top:6px">${side===1?fcuBtn('cstr','CSTR',s.cstr)+fcuBtn('wpt1','WPT',s.wpt1)+fcuBtn('arpt1','ARPT',s.arpt1):fcuBtn('cstr2','CSTR',s.cstr2)+fcuBtn('arpt2','ARPT',s.arpt2)}</div>
+   <div class="prow" style="gap:0;margin-top:2px">${rknob('ndMode'+side,'ND MODE',['LS','VOR','NAV','ARC','PLAN'],s['ndMode'+side],{spread:170,r:48})}${rknob('ndRange'+side,'RANGE NM',[10,20,40,80,160,320],s['ndRange'+side],{spread:190,r:50})}</div>`);}
+function fcuKnob(k,label,valTxt,man){const p=pwr();return `<div class="ctl" style="cursor:default">${label}<div class="win${man&&p?' man':''}">${p?valTxt:''}${man&&p?'<i>●</i>':''}</div>
+  <div style="display:flex;gap:4px">${smallBtn(k+'Pull','PULL')}${smallBtn(k+'Push','PUSH')}</div><div style="display:flex;gap:4px;margin-top:3px">${smallBtn(k+'-','−',1)}${smallBtn(k+'+','+',1)}</div></div>`;}
+function fcu(){const s=S();
+  return plate('FCU',`<div class="prow" style="gap:14px;align-items:flex-start">
+   ${fcuKnob('spd','SPD',s.spdMan?'---':String(s.spd).padStart(3,'0'),s.spdMan)}
+   ${fcuKnob('hdg','HDG',s.hdgMan?'---':String(s.hdg).padStart(3,'0'),s.hdgMan)}
+   <div style="display:flex;flex-direction:column;gap:4px">${fcuKnob('alt','ALT',String(s.alt).padStart(5,'0'),s.altMan)}<div style="display:flex;justify-content:center">${sw('altStep','',[100,1000])}</div></div>
+   ${fcuKnob('vs','V/S',s.vsMan?'-----':(s.vs>=0?'+':'−')+String(Math.abs(s.vs)).padStart(4,'0'),false)}
+  </div><div class="prow" style="gap:8px;margin-top:8px">${fcuBtn('loc','LOC',s.loc)}${fcuBtn('ap1','AP1',s.ap1)}${fcuBtn('ap2','AP2',s.ap2)}${fcuBtn('athr','A/THR',s.athr)}${fcuBtn('exped','EXPED',s.exped)}${fcuBtn('appr','APPR',s.appr)}</div>`,'flex:1');}
+const ELEV=348,ACT=1002;
+function pfd(side){const s=S();if(!ac())return `<div class="scr off" style="min-height:200px"></div>`;
+  const std=s['std'+side],b=s['baro'+side];const ind=Math.round((ELEV+(std?1013-ACT:b-ACT)*27)/10)*10;
+  const fd=(s.fd1?'1':'-')+'FD'+(s.fd2?'2':'-');
+  const fma=`<text x="168" y="12" class="sv w">${s.fd1||s.fd2?fd:''}</text><text x="168" y="24" class="sv c">${s.athr?'A/THR':''}</text><text x="168" y="36" class="sv w">${s.ap1||s.ap2?(s.ap1?'AP1':'')+(s.ap2?'+2':''):''}</text>`;
+  const ls=s['ls'+side]?`<g><path d="M78 150 l6 6 l-6 6 l-6 -6z" fill="none" stroke="#e070f0" stroke-width="2"/><path d="M148 92 l6 6 l-6 6 l-6 -6z" fill="none" stroke="#e070f0" stroke-width="2"/><text x="40" y="186" class="sv m">IEH 108.90</text></g>`:'';
+  return `<div class="scr" style="padding:0;min-height:200px"><svg viewBox="0 0 200 200" width="100%" style="display:block">
+   <rect x="40" y="40" width="100" height="65" fill="#2f74c9"/><rect x="40" y="105" width="100" height="65" fill="#8b5a2b"/><line x1="40" y1="105" x2="140" y2="105" stroke="#fff" stroke-width="1.5"/>
+   <path d="M62 105 h18 v6 M118 105 h-18 v6" stroke="#ffe23a" stroke-width="3" fill="none"/><rect x="88" y="102" width="4" height="6" fill="#ffe23a"/>
+   <rect x="4" y="40" width="30" height="130" fill="#3a434d"/><text x="19" y="110" class="sv w" text-anchor="middle">${s.eng.some(E=>E.st==='running')?'40':'—'}</text>
+   <rect x="146" y="40" width="40" height="130" fill="#3a434d"/><rect x="146" y="96" width="40" height="18" fill="#000" stroke="#ffe23a"/><text x="166" y="109" class="sv g" text-anchor="middle">${ind}</text>
+   <text x="166" y="52" class="sv c" text-anchor="middle">${String(s.alt).padStart(5,'0')}</text>
+   <text x="168" y="186" class="sv c" text-anchor="middle">${std?'STD':'QNH '+b}</text>${ls}
+   <rect x="0" y="0" width="200" height="38" fill="#000"/><line x1="40" y1="2" x2="40" y2="36" stroke="#555"/><line x1="80" y1="2" x2="80" y2="36" stroke="#555"/><line x1="120" y1="2" x2="120" y2="36" stroke="#555"/><line x1="150" y1="2" x2="150" y2="36" stroke="#555"/>${fma}
+  </svg></div>`;}
+function nd(side){const s=S();if(!ac())return `<div class="scr off" style="min-height:200px"></div>`;
+  const mode=s['ndMode'+side],R=s['ndRange'+side],cstr=side===1?s.cstr:s.cstr2,terr=s['terr'+side];
+  const route=T.mc&&T.mc.init&&T.mc.init.st==='loaded';const wps=route?[['D221C',3,0,'4000'],['BKY',9,25,'+3000'],['UTAVA',18,15,'4000'],['BUZAD',38,10,'']]:[];
+  let g='',cx=100,cy=mode==='ARC'?178:100,rad=mode==='ARC'?150:72;
+  if(mode==='PLAN'){g+=`<circle cx="100" cy="100" r="72" fill="none" stroke="#fff" stroke-width="1"/><circle cx="100" cy="100" r="36" fill="none" stroke="#fff" stroke-dasharray="3 3"/><text x="100" y="22" class="sv w" text-anchor="middle">N</text>`;
+    if(route){let pts=[[100,100]];wps.forEach(w=>{const k=72/R*0.5;const a=(w[2]+220)*Math.PI/180;pts.push([100+Math.sin(a)*w[1]*k*2,100-Math.cos(a)*w[1]*k*2]);});
+      g+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#36e36f" stroke-width="2"/>`+pts.slice(1).map((p,j)=>`<text x="${p[0]+4}" y="${p[1]-3}" class="sv g">${wps[j][0]}</text>${cstr&&wps[j][3]?`<text x="${p[0]+4}" y="${p[1]+9}" class="sv m">${wps[j][3]}</text>`:''}`).join('');}
+    g+=`<path d="M100 92 l-6 14 h12z" fill="#ffe23a"/>`;}
+  else{if(mode==='ARC'){const arc=r=>`<path d="M${cx-r*Math.sin(.85)} ${cy-r*Math.cos(.85)} A${r} ${r} 0 0 1 ${cx+r*Math.sin(.85)} ${cy-r*Math.cos(.85)}" fill="none" stroke="#fff" stroke-width="${r===rad?1.5:1}" ${r===rad?'':'stroke-dasharray="3 3"'}/>`;g+=arc(rad)+arc(rad/2)+`<text x="${cx-rad*Math.sin(.85)-2}" y="${cy-rad*Math.cos(.85)+14}" class="sv c">${R}</text><text x="${cx-rad/2*Math.sin(.85)-2}" y="${cy-rad/2*Math.cos(.85)+14}" class="sv c">${R/2}</text>`;}
+    else g+=`<circle cx="${cx}" cy="${cy}" r="${rad}" fill="none" stroke="#fff" stroke-width="1.5"/><circle cx="${cx}" cy="${cy}" r="${rad/2}" fill="none" stroke="#fff" stroke-dasharray="3 3"/><text x="${cx+rad*0.7}" y="${cy+rad*0.7}" class="sv c">${R/2}</text>`;
+    g+=`<text x="${cx}" y="${cy-rad-4}" class="sv w" text-anchor="middle">22</text>`;
+    if(route&&(mode==='ARC'||mode==='NAV')){const k=rad/R;let prev=[cx,cy];wps.forEach(w=>{const d=w[1]*k;if(d>rad*1.05)return;const a=w[2]*Math.PI/180;const p=[cx+Math.sin(a)*d,cy-Math.cos(a)*d];g+=`<line x1="${prev[0]}" y1="${prev[1]}" x2="${p[0]}" y2="${p[1]}" stroke="#36e36f" stroke-width="2"/><path d="M${p[0]} ${p[1]-4} l4 4 l-4 4 l-4 -4z" fill="none" stroke="#fff"/><text x="${p[0]+6}" y="${p[1]+3}" class="sv g">${w[0]}</text>${cstr&&w[3]?`<text x="${p[0]+6}" y="${p[1]+14}" class="sv m">${w[3]}</text>`:''}`;prev=p;});}
+    if(mode==='LS')g+=`<text x="196" y="14" class="sv m" text-anchor="end">IEH 108.90</text><text x="196" y="26" class="sv m" text-anchor="end">CRS 240°</text><line x1="${cx}" y1="${cy-50}" x2="${cx}" y2="${cy+50}" stroke="#e070f0" stroke-width="2"/>`;
+    if(mode==='VOR')g+=`<text x="196" y="14" class="sv w" text-anchor="end">VOR1 ---</text>`;
+    g+=`<path d="M${cx} ${cy-8} v18 M${cx-10} ${cy} h20 M${cx-5} ${cy+8} h10" stroke="#ffe23a" stroke-width="3" fill="none"/>`;}
+  if(terr)g+=`<g opacity=".55">${[[40,60],[150,50],[60,140],[160,150],[30,120],[170,100]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="9" fill="#2f8f3a"/>`).join('')}</g><text x="196" y="196" class="sv c" text-anchor="end">TERR</text>`;
+  if(s.wx!=='OFF'&&side===1)g+=`<text x="4" y="196" class="sv c">WX</text>`;
+  return `<div class="scr" style="padding:0;min-height:200px"><svg viewBox="0 0 200 200" width="100%" style="display:block"><text x="4" y="14" class="sv w">GS  0 TAS ---</text><text x="4" y="26" class="sv w">${mode==='ARC'?'':'ROSE '}${mode}</text>${g}</svg></div>`;}
+function glare(){const s=S(),p=pwr();
+  return `<div class="pnl" style="width:1080px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(#3a4652,#2b343e)">
+   <div style="display:grid;grid-template-columns:270px 1fr 270px;gap:10px">${efis(1)}${fcu()}${efis(2)}</div>
+   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${pfd(1)}${nd(1)}${ecamUpper(true)}${ecamLower(true)}</div>
+   <div style="display:grid;grid-template-columns:260px 150px 1fr;gap:10px">
      ${plate('AUTO BRK',`<div class="prow">${['LO','MED','MAX'].map(x=>pb('ab'+x,x,null,['ON',s.ab===x?'blue':null])).join('')}</div>`)}
+     ${plate('GPWS',`<div class="prow">${pb('terr1','TERR ON ND',null,['ON',s.terr1?'blue':null])}</div>`)}
      ${plate('ECAM CONTROL',`<div class="prow">${pb('sdENG','ENG',null,[ 'ENG', s.sd==='ENG'&&!s.sdAuto?'white':null])}${pb('sdAPU','APU',null,['APU',s.sd==='APU'&&!s.sdAuto?'white':null])}${pb('sdDOOR','DOOR',null,['DOOR',s.sd==='DOOR'&&!s.sdAuto?'white':null])}${pb('sts','STS',null,['STS',s.sd==='STS'&&!s.sdAuto?'white':null])}</div>`)}
    </div></div>`;}
+
 function ped(){const s=S(),p=pwr();
   const mst=(id,lab)=>`<div class="ctl${hl(id)}" data-ctl="${id}" role="button">${lab}<div class="mst" style="--y:${s[id]?'4px':'34px'}"></div><span>${s[id]?'ON':'OFF'}</span><div class="amb ${p&&s.eng[id==='m1'?0:1].fault?'lt':''}">FAULT</div></div>`;
   return `<div class="pnl" style="width:840px;display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px">
@@ -861,6 +939,7 @@ function ped(){const s=S(),p=pwr();
    </div>
    <div style="display:flex;flex-direction:column;gap:12px">
      ${plate('FLAPS',`<div class="prow"><div class="lever${hl('flaps')}">${['0','1','2','3','FULL'].map(x=>`<div class="lp${s.flaps===x?' on':''}" data-ctl="flaps" data-v="${x}" role="button"><i></i>${x}</div>`).join('')}</div></div>`)}
+     ${plate('WEATHER RADAR',`<div class="prow" style="gap:16px">${rknob('wx','SYS',['OFF','SYS 1','SYS 2'],s.wx,{w:110,spread:100,r:42})}${sw('pws','PWS',['AUTO','OFF'])}</div>`)}
      ${plate('ATC / TCAS',`<div class="prow" style="gap:26px">${knob('xpdr','XPDR',['STBY','AUTO','ON'],s.xpdr,[-50,0,50],['left:-6px;top:50px','left:26px;top:4px','right:-2px;top:50px'])}${knob('tcas','TCAS',['STBY','TA','TA/RA'],s.tcas,[-50,0,50],['left:-6px;top:50px','left:30px;top:4px','right:-16px;top:50px'])}</div>`)}
    </div></div>`;}
 function mcduPanel(){if(!T.mc)return '<div class="pnl">MCDU not available</div>';const st=cur(),m=mapOf(st);
@@ -911,7 +990,7 @@ function paint(full){if(!T)return;const main=el('trMain');const st=cur();
     right=`<div class="tcard"><div class="k">${esc(st.phase)}</div>
       ${showDetail?`<h3 class="it">${esc(st.i)}</h3>${st.a?`<div class="ac">${esc(st.a)}</div>`:''}${m&&m.mcdu&&(T.mode==='learn'||T.reveal===T.i)?`<div class="nt">${esc(window.MCDU.M[st.k].hint)}</div>`:st.n?`<div class="nt">${noteHTML(st.n,st.t)}</div>`:''}<div class="where">${where(st)}</div>`
        :`<h3 class="it">Step ${T.i+1}: what's next?</h3><div class="where">Operate the next control from memory.</div><button type="button" class="tbtn alt" id="trReveal">Show me (counts as a hint)</button>`}
-      ${waitTxt}${extra}${btn}
+      ${m&&m.info&&showDetail?`<div class="tfb info">${m.info}</div>`:''}${waitTxt}${extra}${btn}
       <div style="display:flex;gap:8px">${T.i>0?'<button type="button" class="tbtn alt" id="trBack" style="flex:1">← Back a step</button>':''}${T.hold===T.i&&panel?'<button type="button" class="tbtn alt" id="trNext" style="flex:1">Next →</button>':''}</div></div>`;}
   if(T.fb)right+=`<div class="tfb ${T.fb.c}">${esc(T.fb.t)}</div>`;
   if(T.tab===MCD&&window.MCDU)right+=window.MCDU.paper();else right+=`<div class="mini-ecam">${T.tab===GLR?'':ecamUpper(false)}${T.tab===OVH?ecamLower(false):''}</div>`;
@@ -924,7 +1003,10 @@ function pick(){T=null;el('trTitle').textContent='Cockpit trainer';el('trStat').
   el('trMain').innerHTML=`<div style="overflow:auto"><div class="drillpick">${Object.entries(DRILLS).map(([k,d])=>`<button type="button" data-drill="${k}"><b>${d.t}</b><span>${d.d}</span><span style="font-size:12.5px">${steps(k).length} steps · Best learn: ${fmt(k+'-learn')} · Best test: ${fmt(k+'-test')}</span></button>`).join('')}
    <div style="grid-column:1 / -1;color:var(--muted);font-size:14px;line-height:1.5"><b style="color:var(--text)">How it works.</b> Tap switches, knobs and buttons on the panels just like the sim. <b style="color:var(--text)">Learn</b> highlights the next control and switches to the right panel for you. <b style="color:var(--text)">Test</b> hides the steps – work from memory; wrong or out-of-order controls count as mistakes. Steps done on the tablet or MCDU show a "Done it" button. The steps come from your checklist, so your coach's edits appear here too.</div></div></div>`;}
 // events
-document.addEventListener('pointerdown',e=>{const c=e.target.closest('.tr [data-ctl]');if(!c)return;e.preventDefault();act(c.dataset.ctl,c.dataset.v);});
+let repT=null,repI=null;const stopRep=()=>{clearTimeout(repT);clearInterval(repI);repT=repI=null;};
+document.addEventListener('pointerdown',e=>{const c=e.target.closest('.tr [data-ctl]');if(!c)return;e.preventDefault();const id=c.dataset.ctl,v=c.dataset.v;act(id,v);
+  if(c.dataset.rep){stopRep();repT=setTimeout(()=>{repI=setInterval(()=>act(id,v),60);},380);}});
+['pointerup','pointercancel','blur'].forEach(ev=>window.addEventListener(ev,stopRep));
 document.addEventListener('click',e=>{if(!e.target.closest('.tr'))return;const kk=e.target.closest('[data-k]');if(kk){mcduKey(kk.dataset.k);return;}const b=e.target.closest('button');if(!b)return;
   if(b.dataset.drill){start(b.dataset.drill);return;}
   if(b.dataset.tab&&T){T.tab=b.dataset.tab;paint();return;}
@@ -952,6 +1034,7 @@ document.addEventListener('keydown',e=>{if(!el('tr').classList.contains('show'))
 setTimeout(()=>{if(window.MCDU){const prev=window.MCDU.onChange;window.MCDU.onChange=s=>{if(T&&s===T.mc&&el('tr').classList.contains('show')){checkCurrent();paint(true);}else if(prev)prev(s);};}},0);
 })();
 </script>
+
 
 
 
