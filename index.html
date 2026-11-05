@@ -627,7 +627,7 @@ const saveBest=()=>{try{localStorage.setItem(TKEY,JSON.stringify(best))}catch(e)
 const ACCEL={apuStart:9000,apuStop:5000,align:14000,engStart:12000,engStop:6000};
 // which panel each control lives on
 const PANEL={};
-const OVH='Overhead',GLR='Glareshield & main',PED='Pedestal';
+const OVH='Overhead',GLR='Glareshield & main',PED='Pedestal',MCD='MCDU';
 ['adirs1','adirs2','adirs3','fireApu','fireE1','fireE2','yPump','fL1','fL2','fCL','fCR','fR1','fR2','bat1','bat2','ext','apuBleed','antiWing','antiE1','antiE2','oxy','cvr','strobe','beacon','wing','nav','rwy','land','nose','apuMaster','apuStart','belts','smoke','emer'].forEach(k=>PANEL[k]=OVH);
 ['fd1','fd2','ls1','ls2','cstr','athr','ap1','ap2','abLO','abMED','abMAX','sdENG','sdAPU','sdDOOR','sts'].forEach(k=>PANEL[k]=GLR);
 ['m1','m2','mode','flaps','spd','park','xpdr','tcas'].forEach(k=>PANEL[k]=PED);
@@ -708,6 +708,7 @@ const DRILLS={
  start:{t:'Cold & dark → engines running',d:'Power up, tablet and MCDU, autopilot panel, pushback, engine start and after-start checks.',re:/^S0[2-8]-/},
  stop:{t:'Runway vacated → shutdown',d:'After landing, single-engine taxi, parking and full shutdown to cold and dark.',re:/^S(18|19|20)-/}
 };
+function mcduSteps(){if(!window.MCDU)return;Object.keys(window.MCDU.M).forEach(id=>{if(/^S04-/.test(id)&&!M[id])M[id]={mcdu:true,c:[],ok:()=>!!(T&&T.mc&&window.MCDU.M[id].ok(T.mc))};});}
 function coldDark(){return{bat1:false,bat2:false,ext:false,gpu:true,apuMaster:false,apu:{st:'off',n:0,t:0},adirs:['OFF','OFF','OFF'],align:[0,0,0],oxy:false,cvr:false,
   tested:{apu:false,e1:false,e2:false},testing:null,fL1:false,fL2:false,fCL:false,fCR:false,fR1:false,fR2:false,apuBleed:false,antiWing:false,antiE1:false,antiE2:false,yPump:false,
   strobe:'OFF',beacon:'OFF',wing:'OFF',nav:'OFF',rwy:'OFF',land:'RETRACT',nose:'OFF',belts:'OFF',smoke:'OFF',emer:'OFF',
@@ -724,18 +725,18 @@ function steps(drill){const out=[];DATA.forEach(P=>P.s.forEach(x=>{if(DRILLS[dri
   // coach-added rows (no S-id) sitting inside a drill phase
   DATA.forEach(P=>{if(P.s.some(x=>DRILLS[drill].re.test(x.k)))P.s.forEach(x=>{if(!/^S\d\d-/.test(x.k)&&!out.find(o=>o.k===x.k)){const prevIdx=P.s.indexOf(x);let at=out.length;for(let j=prevIdx-1;j>=0;j--){const f=out.findIndex(o=>o.k===P.s[j].k);if(f>=0){at=f+1;break;}}out.splice(at,0,Object.assign({phase:P.t},x));}});});
   return out;}
-function start(drill){T={drill,mode:T0mode,s:drill==='start'?coldDark():afterLanding(),steps:steps(drill),i:0,done:[],mistakes:0,hints:0,t0:null,tEnd:null,fb:null,tab:OVH,manualTab:false,last:Date.now()};
+function start(drill){mcduSteps();T={drill,mode:T0mode,mc:window.MCDU?window.MCDU.fresh('pre'):null,s:drill==='start'?coldDark():afterLanding(),steps:steps(drill),i:0,done:[],mistakes:0,hints:0,t0:null,tEnd:null,fb:null,tab:OVH,manualTab:false,last:Date.now()};
   if(drill==='stop')T.tab=PED;skipSatisfied(true);paint(true);}
 const cur=()=>T.steps[T.i];
 const mapOf=st=>st?M[st.k]:null;
-function isPanel(st){const m=mapOf(st);return !!(m&&m.ok&&((m.c&&m.c.length)||m.wait));}
+function isPanel(st){const m=mapOf(st);return !!(m&&m.ok&&((m.c&&m.c.length)||m.wait||m.mcdu));}
 function controlsOf(st){const m=mapOf(st);return m&&m.c?m.c:[];}
-function where(st){const c=controlsOf(st);if(!c.length)return mapOf(st)&&mapOf(st).wait?'Watch the ECAM screens':'Done outside the panels (tablet, MCDU, sim) – tap the button when you have done it';const ps=[...new Set(c.map(k=>PANEL[k]))];return 'Find it on: '+ps.join(' / ');}
+function where(st){const mm=mapOf(st);if(mm&&mm.mcdu)return 'Find it on: MCDU';const c=controlsOf(st);if(!c.length)return mapOf(st)&&mapOf(st).wait?'Watch the ECAM screens':'Done outside the panels (tablet, MCDU, sim) – tap the button when you have done it';const ps=[...new Set(c.map(k=>PANEL[k]))];return 'Find it on: '+ps.join(' / ');}
 function complete(msg){T.done.push(T.i);T.i++;T.fb=msg?{c:'ok',t:msg}:null;skipSatisfied(false);
   if(T.i>=T.steps.length){T.tEnd=Date.now();const time=(T.tEnd-(T.t0||T.tEnd))/1000;const key=T.drill+'-'+T.mode;const b=best[key];
     if(!b||T.mistakes<b.m||(T.mistakes===b.m&&time<b.t)){best[key]={t:time,m:T.mistakes,h:T.hints,at:Date.now()};saveBest();T.newBest=true;}}}
-function skipSatisfied(initial){while(T.i<T.steps.length){const st=cur(),m=mapOf(st);if(m&&m.ok&&!m.wait&&m.c&&m.c.length&&m.ok(T.s)){T.done.push(T.i);T.i++;if(!initial)T.fb={c:'ok',t:`${st.i} – already set ✓`};continue;}break;}
-  const st=cur();if(st&&!T.manualTab&&T.mode==='learn'){const c=controlsOf(st);if(c.length)T.tab=PANEL[c[0]];}T.manualTab=false;}
+function skipSatisfied(initial){while(T.i<T.steps.length){const st=cur(),m=mapOf(st);if(m&&m.ok&&!m.wait&&((m.c&&m.c.length)||m.mcdu)&&m.ok(T.s)){T.done.push(T.i);T.i++;if(!initial)T.fb={c:'ok',t:`${st.i} – already set ✓`};continue;}break;}
+  const st=cur();const sm=mapOf(st);if(st&&sm&&sm.mcdu){T.tab=MCD;}else if(st&&!T.manualTab&&T.mode==='learn'){const c=controlsOf(st);if(c.length)T.tab=PANEL[c[0]];}T.manualTab=false;}
 function checkCurrent(){const st=cur();if(!st)return;const m=mapOf(st);if(m&&isPanel(st)&&m.ok(T.s)){complete(`✓ ${st.i} – ${st.a||'done'}`);}}
 // ---- simulation tick
 function tick(){if(!T||!el('tr').classList.contains('show'))return;const s=T.s,now=Date.now(),dt=now-T.last;T.last=now;
@@ -862,6 +863,12 @@ function ped(){const s=S(),p=pwr();
      ${plate('FLAPS',`<div class="prow"><div class="lever${hl('flaps')}">${['0','1','2','3','FULL'].map(x=>`<div class="lp${s.flaps===x?' on':''}" data-ctl="flaps" data-v="${x}" role="button"><i></i>${x}</div>`).join('')}</div></div>`)}
      ${plate('ATC / TCAS',`<div class="prow" style="gap:26px">${knob('xpdr','XPDR',['STBY','AUTO','ON'],s.xpdr,[-50,0,50],['left:-6px;top:50px','left:26px;top:4px','right:-2px;top:50px'])}${knob('tcas','TCAS',['STBY','TA','TA/RA'],s.tcas,[-50,0,50],['left:-6px;top:50px','left:30px;top:4px','right:-16px;top:50px'])}</div>`)}
    </div></div>`;}
+function mcduPanel(){if(!T.mc)return '<div class="pnl">MCDU not available</div>';const st=cur(),m=mapOf(st);
+  const keys=(T.mode==='learn'||T.reveal===T.i)&&m&&m.mcdu&&ac()?window.MCDU.M[st.k].keys(T.mc):[];
+  return window.MCDU.html(T.mc,keys,!ac());}
+function mcduKey(k){if(!T||T.tEnd||!T.mc)return;if(!ac()){T.fb={c:'info',t:'The MCDU has no power yet – it needs AC power (external power or the APU).'};paint();return;}
+  if(!T.t0)T.t0=Date.now();const before=T.mc.mistakes;T.mc.fb=null;window.MCDU.key(T.mc,k);if(T.mc.mistakes>before)T.mistakes+=T.mc.mistakes-before;if(T.mc.fb)T.fb=T.mc.fb;
+  checkCurrent();paint(true);}
 function ac(){const s=S();return (s.bat1||s.bat2)&&(s.ext||apuAvail(s)||run(s,0)||run(s,1));}
 function ecamUpper(big){const s=S();if(!ac())return `<div class="scr off" style="${big?'':'min-height:120px'}"></div>`;
   const e=i=>{const E=s.eng[i];const n2=E.n2,n1=E.st==='running'?19.6:Math.max(0,(n2-55)*0.4),egt=E.st==='running'?412:Math.max(0,(n2-25)*6),ff=E.st==='running'||n2>25?(E.st==='running'?320:Math.round(n2*3)):0;
@@ -891,8 +898,8 @@ function paint(full){if(!T)return;const main=el('trMain');const st=cur();
   [...el('trMode').children].forEach(b=>b.classList.toggle('on',b.dataset.m===T.mode));
   const secs=T.t0?Math.round(((T.tEnd||Date.now())-T.t0)/1000):0;
   el('trStat').innerHTML=`<span>Step <b>${Math.min(T.i+1,T.steps.length)}</b>/${T.steps.length}</span><span>Time <b>${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}</b></span><span class="${T.mistakes?'bad':''}">Mistakes <b class="${T.mistakes?'bad':''}">${T.mistakes}</b></span>`;
-  const tabs=[OVH,GLR,PED];const need=st?[...new Set(controlsOf(st).map(k=>PANEL[k]))]:[];
-  const panelHTML=T.tab===OVH?overhead():T.tab===GLR?glare():ped();
+  const tabs=[OVH,GLR,PED,MCD];const need=st?(mapOf(st)&&mapOf(st).mcdu?[MCD]:[...new Set(controlsOf(st).map(k=>PANEL[k]))]):[];
+  const panelHTML=T.tab===OVH?overhead():T.tab===GLR?glare():T.tab===PED?ped():mcduPanel();
   let right='';
   if(T.tEnd){const time=(T.tEnd-T.t0)/1000,key=T.drill+'-'+T.mode,b=best[key];
     right=`<div class="done-card"><h3>Drill complete</h3><div class="big">Time ${Math.floor(time/60)}:${String(Math.round(time%60)).padStart(2,'0')}<br>Mistakes ${T.mistakes}<br>Hints used ${T.hints}</div>${T.newBest?'<div style="color:var(--green);font-weight:600">New personal best</div>':''}${b?`<div style="font-size:13px;color:var(--muted)">Best (${T.mode}): ${Math.floor(b.t/60)}:${String(Math.round(b.t%60)).padStart(2,'0')}, ${b.m} mistakes</div>`:''}
@@ -902,11 +909,11 @@ function paint(full){if(!T)return;const main=el('trMain');const st=cur();
     const extra=m&&m.extra?`<button type="button" class="tbtn alt" id="trExtra">${m.extra.label}</button>`:'';
     const waitTxt=m&&m.wait?`<div class="tfb info">${m.wait}</div>`:'';
     right=`<div class="tcard"><div class="k">${esc(st.phase)}</div>
-      ${showDetail?`<h3 class="it">${esc(st.i)}</h3>${st.a?`<div class="ac">${esc(st.a)}</div>`:''}${st.n?`<div class="nt">${noteHTML(st.n,st.t)}</div>`:''}<div class="where">${where(st)}</div>`
+      ${showDetail?`<h3 class="it">${esc(st.i)}</h3>${st.a?`<div class="ac">${esc(st.a)}</div>`:''}${m&&m.mcdu&&(T.mode==='learn'||T.reveal===T.i)?`<div class="nt">${esc(window.MCDU.M[st.k].hint)}</div>`:st.n?`<div class="nt">${noteHTML(st.n,st.t)}</div>`:''}<div class="where">${where(st)}</div>`
        :`<h3 class="it">Step ${T.i+1}: what's next?</h3><div class="where">Operate the next control from memory.</div><button type="button" class="tbtn alt" id="trReveal">Show me (counts as a hint)</button>`}
       ${waitTxt}${extra}${btn}</div>`;}
   if(T.fb)right+=`<div class="tfb ${T.fb.c}">${esc(T.fb.t)}</div>`;
-  right+=`<div class="mini-ecam">${T.tab===GLR?'':ecamUpper(false)}${T.tab===OVH?ecamLower(false):''}</div>`;
+  if(T.tab===MCD&&window.MCDU)right+=window.MCDU.paper();else right+=`<div class="mini-ecam">${T.tab===GLR?'':ecamUpper(false)}${T.tab===OVH?ecamLower(false):''}</div>`;
   const doneList=`<div class="tcard"><div class="k">This drill</div><div class="tlist">${T.steps.map((x,j)=>`<span class="${j<T.i?'d':j===T.i?'c':''}"><span>${j+1}. ${esc(x.i)}</span><span>${j<T.i?'✓':j===T.i?'→':''}</span></span>`).join('')}</div></div>`;
   main.innerHTML=`<div class="tr-body"><div class="tr-left"><div class="tabs">${tabs.map(t=>`<button type="button" class="${t===T.tab?'on':''}" data-tab="${t}">${t}${T.mode==='learn'&&need.includes(t)&&t!==T.tab?'<span class="dot"></span>':''}</button>`).join('')}</div><div class="stage" id="trStage"><div class="stage-inner">${panelHTML}</div></div></div><div class="tr-right">${right}${doneList}</div></div>`;
   scaleStage();
@@ -917,7 +924,7 @@ function pick(){T=null;el('trTitle').textContent='Cockpit trainer';el('trStat').
    <div style="grid-column:1 / -1;color:var(--muted);font-size:14px;line-height:1.5"><b style="color:var(--text)">How it works.</b> Tap switches, knobs and buttons on the panels just like the sim. <b style="color:var(--text)">Learn</b> highlights the next control and switches to the right panel for you. <b style="color:var(--text)">Test</b> hides the steps – work from memory; wrong or out-of-order controls count as mistakes. Steps done on the tablet or MCDU show a "Done it" button. The steps come from your checklist, so your coach's edits appear here too.</div></div></div>`;}
 // events
 document.addEventListener('pointerdown',e=>{const c=e.target.closest('.tr [data-ctl]');if(!c)return;e.preventDefault();act(c.dataset.ctl,c.dataset.v);});
-document.addEventListener('click',e=>{if(!e.target.closest('.tr'))return;const b=e.target.closest('button');if(!b)return;
+document.addEventListener('click',e=>{if(!e.target.closest('.tr'))return;const kk=e.target.closest('[data-k]');if(kk){mcduKey(kk.dataset.k);return;}const b=e.target.closest('button');if(!b)return;
   if(b.dataset.drill){start(b.dataset.drill);return;}
   if(b.dataset.tab&&T){T.tab=b.dataset.tab;paint();return;}
   if(b.dataset.m){T0mode=b.dataset.m;if(T)start(T.drill);else[...el('trMode').children].forEach(x=>x.classList.toggle('on',x.dataset.m===T0mode));return;}
@@ -936,9 +943,12 @@ function openT(){el('tr').classList.add('show');document.querySelector('.app').s
 function closeT(){el('tr').classList.remove('show');document.querySelector('.app').style.visibility='';}
 window.openTrainer=openT;window.__trainer=()=>T;
 window.addEventListener('resize',scaleStage);
-document.addEventListener('keydown',e=>{if(el('tr').classList.contains('show')&&e.key==='Escape')closeT();});
+document.addEventListener('keydown',e=>{if(!el('tr').classList.contains('show'))return;if(e.key==='Escape'){closeT();return;}
+  if(T&&T.tab===MCD){const k=e.key.toUpperCase();if(/^[A-Z0-9]$/.test(k)||k==='/'||k==='.'){mcduKey(k);e.preventDefault();}else if(e.key==='Backspace'){mcduKey('CLR');e.preventDefault();}else if(e.key===' '){mcduKey('SP');e.preventDefault();}}});
+setTimeout(()=>{if(window.MCDU){const prev=window.MCDU.onChange;window.MCDU.onChange=s=>{if(T&&s===T.mc&&el('tr').classList.contains('show')){checkCurrent();paint(true);}else if(prev)prev(s);};}},0);
 })();
 </script>
+
 
 
 <style>
@@ -1122,16 +1132,16 @@ function key(k){if(!S||S.tEnd)return;if(!S.t0)S.t0=Date.now();S.fb=null;
   if(/^[LR][1-6]$/.test(k))lsk(k);after();}
 function lsk(k){const s=S,p=s.page,sp=s.sp&&!s.spMsg?s.sp.trim():'',side=k[0],n=+k[1];
   const take=()=>{s.sp='';};
-  if(p==='INIT'){if(k==='R2'&&s.init.st==='empty'){s.init.st='loading';setTimeout(()=>{if(S===s){s.init.st='loaded';loadRoute(s);s.wind.st=s.wind.st;paint();}},1100);return;}
+  if(p==='INIT'){if(k==='R2'&&s.init.st==='empty'){s.init.st='loading';setTimeout(()=>{s.init.st='loaded';loadRoute(s);notify(s);},1100);return;}
     if(k==='R3'){s.page='IRS';s.irsSeen=true;return;}if(k==='R4'){s.page='WIND';return;}
     if(k==='L5'&&sp){if(/^\d{1,3}$/.test(sp)){take();OFP.ci===sp||wrong('Cost index',OFP.ci);}else msg('FORMAT ERROR',true);return;}
     if(k==='R1'&&sp){msg('USE INIT REQUEST',false);return;}
     if(sp)msg('NOT ALLOWED',true);return;}
-  if(p==='IRS'||p==='WIND'){if(k==='L6'){s.page='INIT';return;}if(p==='WIND'&&k==='R4'&&s.wind.st==='empty'){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.wind.st='loading';setTimeout(()=>{if(S===s){s.wind.st='loaded';paint();}},900);return;}
+  if(p==='IRS'||p==='WIND'){if(k==='L6'){s.page='INIT';return;}if(p==='WIND'&&k==='R4'&&s.wind.st==='empty'){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.wind.st='loading';setTimeout(()=>{s.wind.st='loaded';notify(s);},900);return;}
     if(p==='WIND'&&k==='R6'){msg('NOT IN TRAINER');return;}return;}
   if(p==='INITB'){if(k==='R1'){if(!sp){if(s.init.st!=='loaded'){msg('NOT ALLOWED',true);return;}s.b.zfw=OFP.zfw;s.b.cg=OFP.cg;return;}
       const m=sp.match(/^(\d{1,3}(\.\d)?)\/(\d{1,2}(\.\d)?)$/);if(!m){msg('FORMAT ERROR',true);return;}take();s.b.zfw=(+m[1]).toFixed(1);s.b.cg=(+m[3]).toFixed(1);if(s.b.zfw!==OFP.zfw||s.b.cg!==OFP.cg)wrong('ZFW/ZFWCG',OFP.zfw+'/'+OFP.cg);return;}
-    if(k==='R3'){if(s.b.plan==='none'){if(!s.b.zfw){msg('ENTER ZFW/ZFWCG FIRST',true);return;}s.b.plan='computing';setTimeout(()=>{if(S===s){s.b.plan='planned';paint();}},1500);return;}
+    if(k==='R3'){if(s.b.plan==='none'){if(!s.b.zfw){msg('ENTER ZFW/ZFWCG FIRST',true);return;}s.b.plan='computing';setTimeout(()=>{s.b.plan='planned';notify(s);},1500);return;}
       if(s.b.plan==='planned'){s.b.plan='confirmed';return;}return;}
     if(k==='R2'&&sp){if(/^\d{1,2}(\.\d)?$/.test(sp)){take();msg('USE FUEL PLANNING',false);}else msg('FORMAT ERROR',true);return;}
     if(sp)msg('NOT ALLOWED',true);return;}
@@ -1177,12 +1187,13 @@ function lsk(k){const s=S,p=s.page,sp=s.sp&&!s.spMsg?s.sp.trim():'',side=k[0],n=
     return;}
   if(p==='RAD'){if(sp)msg('NOT IN TRAINER');return;}
 }
-function after(){adv(false);paint();}
+function after(){if(D){adv(false);paint();}}
+function notify(s){if(D&&S===s){adv(false);paint();}else if(API.onChange)API.onChange(s);}
 // ---------- paint
-function hlKeys(){if(mode!=='learn'&&D.reveal!==D.i)return [];const st=cur(),m=mp(st);return m&&m.keys?m.keys(S):[];}
+function hlKeys(){if(!D)return [];if(mode!=='learn'&&D.reveal!==D.i)return [];const st=cur(),m=mp(st);return m&&m.keys?m.keys(S):[];}
 function K(id,label,cls=''){return `<button type="button" class="mk ${cls}${hl.includes(id)?' hlk':''}" data-k="${id}">${label}</button>`;}
 let hl=[];
-function device(){hl=hlKeys();const g=pg(S);const lsk=side=>[1,2,3,4,5,6].map(i=>`<b data-k="${side}${i}" class="${hl.includes(side+i)?'hlk':''}" role="button" aria-label="${side==='L'?'Left':'Right'} key ${i}"></b>`).join('');
+function device(keys,off){hl=keys||hlKeys();const g=off?blank():pg(S);const lsk=side=>[1,2,3,4,5,6].map(i=>`<b data-k="${side}${i}" class="${hl.includes(side+i)?'hlk':''}" role="button" aria-label="${side==='L'?'Left':'Right'} key ${i}"></b>`).join('');
   return `<div class="mcdu"><div class="mc-scrwrap"><div class="lsk">${lsk('L')}</div><div class="mscr">${scrHTML(g)}</div><div class="lsk">${lsk('R')}</div></div>
   <div class="mkeys">
    <div class="krow" style="grid-template-columns:repeat(6,1fr)">${K('DIR','DIR')}${K('PROG','PROG')}${K('PERF','PERF')}${K('INIT','INIT')}${K('DATA','DATA')}${K('BRT','BRT')}</div>
@@ -1227,8 +1238,14 @@ window.addEventListener('resize',scaleIt);
 function openM(){$('mc').classList.add('show');document.querySelector('.app').style.visibility='hidden';pick();}
 function closeM(){$('mc').classList.remove('show');document.querySelector('.app').style.visibility='';}
 window.openMcdu=openM;window.__mcdu=()=>({S,D});
+const API={onChange:null,M,OFP,paper,
+  fresh:d=>{const s=fresh(d);s.drill=d;return s;},
+  key:(s,k)=>{const sv=S,dv=D;S=s;D=null;try{key(k);}finally{S=sv;D=dv;}},
+  html:(s,keys,off)=>{const sv=S;S=s;try{return device(keys||[],off);}finally{S=sv;}}};
+window.MCDU=API;
 })();
 </script>
+
 
 
 </body>
