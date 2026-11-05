@@ -737,7 +737,7 @@ function complete(msg){T.done.push(T.i);T.i++;T.fb=msg?{c:'ok',t:msg}:null;skipS
     if(!b||T.mistakes<b.m||(T.mistakes===b.m&&time<b.t)){best[key]={t:time,m:T.mistakes,h:T.hints,at:Date.now()};saveBest();T.newBest=true;}}}
 function skipSatisfied(initial){while(T.i<T.steps.length){const st=cur(),m=mapOf(st);if(m&&m.ok&&!m.wait&&((m.c&&m.c.length)||m.mcdu)&&m.ok(T.s)){T.done.push(T.i);T.i++;if(!initial)T.fb={c:'ok',t:`${st.i} – already set ✓`};continue;}break;}
   const st=cur();const sm=mapOf(st);if(st&&sm&&sm.mcdu){T.tab=MCD;}else if(st&&!T.manualTab&&T.mode==='learn'){const c=controlsOf(st);if(c.length)T.tab=PANEL[c[0]];}T.manualTab=false;}
-function checkCurrent(){const st=cur();if(!st)return;const m=mapOf(st);if(m&&isPanel(st)&&m.ok(T.s)){complete(`✓ ${st.i} – ${st.a||'done'}`);}}
+function checkCurrent(){const st=cur();if(!st||T.hold===T.i)return;const m=mapOf(st);if(m&&isPanel(st)&&m.ok(T.s)){complete(`✓ ${st.i} – ${st.a||'done'}`);}}
 // ---- simulation tick
 function tick(){if(!T||!el('tr').classList.contains('show'))return;const s=T.s,now=Date.now(),dt=now-T.last;T.last=now;
   const dc=s.bat1||s.bat2;
@@ -762,7 +762,7 @@ function tick(){if(!T||!el('tr').classList.contains('show'))return;const s=T.s,n
   const before=T.i;checkCurrent();if(busy||T.i!==before)paint(T.i!==before);}
 setInterval(tick,150);
 // ---- actions
-function act(id,v){if(!T||T.tEnd)return;const s=T.s,dc=s.bat1||s.bat2;if(!T.t0)T.t0=Date.now();
+function act(id,v){if(!T||T.tEnd)return;T.hold=null;const s=T.s,dc=s.bat1||s.bat2;if(!T.t0)T.t0=Date.now();
   const st=cur(),m=mapOf(st);
   const before=JSON.stringify(stateKey(id));
   switch(id){
@@ -867,7 +867,7 @@ function mcduPanel(){if(!T.mc)return '<div class="pnl">MCDU not available</div>'
   const keys=(T.mode==='learn'||T.reveal===T.i)&&m&&m.mcdu&&ac()?window.MCDU.M[st.k].keys(T.mc):[];
   return window.MCDU.html(T.mc,keys,!ac());}
 function mcduKey(k){if(!T||T.tEnd||!T.mc)return;if(!ac()){T.fb={c:'info',t:'The MCDU has no power yet – it needs AC power (external power or the APU).'};paint();return;}
-  if(!T.t0)T.t0=Date.now();const before=T.mc.mistakes;T.mc.fb=null;window.MCDU.key(T.mc,k);if(T.mc.mistakes>before)T.mistakes+=T.mc.mistakes-before;if(T.mc.fb)T.fb=T.mc.fb;
+  T.hold=null;if(!T.t0)T.t0=Date.now();const before=T.mc.mistakes;T.mc.fb=null;window.MCDU.key(T.mc,k);if(T.mc.mistakes>before)T.mistakes+=T.mc.mistakes-before;if(T.mc.fb)T.fb=T.mc.fb;
   checkCurrent();paint(true);}
 function ac(){const s=S();return (s.bat1||s.bat2)&&(s.ext||apuAvail(s)||run(s,0)||run(s,1));}
 function ecamUpper(big){const s=S();if(!ac())return `<div class="scr off" style="${big?'':'min-height:120px'}"></div>`;
@@ -911,7 +911,8 @@ function paint(full){if(!T)return;const main=el('trMain');const st=cur();
     right=`<div class="tcard"><div class="k">${esc(st.phase)}</div>
       ${showDetail?`<h3 class="it">${esc(st.i)}</h3>${st.a?`<div class="ac">${esc(st.a)}</div>`:''}${m&&m.mcdu&&(T.mode==='learn'||T.reveal===T.i)?`<div class="nt">${esc(window.MCDU.M[st.k].hint)}</div>`:st.n?`<div class="nt">${noteHTML(st.n,st.t)}</div>`:''}<div class="where">${where(st)}</div>`
        :`<h3 class="it">Step ${T.i+1}: what's next?</h3><div class="where">Operate the next control from memory.</div><button type="button" class="tbtn alt" id="trReveal">Show me (counts as a hint)</button>`}
-      ${waitTxt}${extra}${btn}</div>`;}
+      ${waitTxt}${extra}${btn}
+      <div style="display:flex;gap:8px">${T.i>0?'<button type="button" class="tbtn alt" id="trBack" style="flex:1">← Back a step</button>':''}${T.hold===T.i&&panel?'<button type="button" class="tbtn alt" id="trNext" style="flex:1">Next →</button>':''}</div></div>`;}
   if(T.fb)right+=`<div class="tfb ${T.fb.c}">${esc(T.fb.t)}</div>`;
   if(T.tab===MCD&&window.MCDU)right+=window.MCDU.paper();else right+=`<div class="mini-ecam">${T.tab===GLR?'':ecamUpper(false)}${T.tab===OVH?ecamLower(false):''}</div>`;
   const doneList=`<div class="tcard"><div class="k">This drill</div><div class="tlist">${T.steps.map((x,j)=>`<span class="${j<T.i?'d':j===T.i?'c':''}"><span>${j+1}. ${esc(x.i)}</span><span>${j<T.i?'✓':j===T.i?'→':''}</span></span>`).join('')}</div></div>`;
@@ -933,6 +934,9 @@ document.addEventListener('click',e=>{if(!e.target.closest('.tr'))return;const k
    case 'trConfirm':{if(!T.t0)T.t0=Date.now();const st=cur();complete(`✓ ${st.i}`);paint(true);break;}
    case 'trExtra':{const m=mapOf(cur());m.extra.fn(T.s);T.fb={c:'info',t:'Ground power connected – EXT PWR AVAIL is lit.'};paint();break;}
    case 'trReveal':T.hints++;T.reveal=T.i;if(!T.manualTab){const c=controlsOf(cur());if(c.length)T.tab=PANEL[c[0]];}paint();break;
+   case 'trBack':{if(T.i>0){T.i--;const j=T.done.lastIndexOf(T.i);if(j>=0)T.done.splice(j,1);T.hold=T.i;T.reveal=-1;const st=cur(),m=mapOf(st);if(m&&m.mcdu)T.tab=MCD;else{const c=controlsOf(st);if(c.length)T.tab=PANEL[c[0]];}
+     T.fb={c:'info',t:`Back to step ${T.i+1}. Switches stay as you left them – change them to redo the step, or tap Next →.`};}paint(true);break;}
+   case 'trNext':{T.hold=null;const st=cur();complete(`✓ ${st.i}`);paint(true);break;}
    case 'trRestart':start(T.drill);break;
    case 'trAgain':start(T.drill);break;
    case 'trToTest':T0mode='test';start(T.drill);break;
@@ -948,6 +952,7 @@ document.addEventListener('keydown',e=>{if(!el('tr').classList.contains('show'))
 setTimeout(()=>{if(window.MCDU){const prev=window.MCDU.onChange;window.MCDU.onChange=s=>{if(T&&s===T.mc&&el('tr').classList.contains('show')){checkCurrent();paint(true);}else if(prev)prev(s);};}},0);
 })();
 </script>
+
 
 
 
